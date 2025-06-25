@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import MenuCard from '@/components/MenuCard';
@@ -158,9 +157,7 @@ const Menu = () => {
       return;
     }
     
-    // Here you would implement checkout logic
-    toast.success('Redirecionando para checkout...');
-    // navigate('/checkout');
+    navigate('/checkout', { state: { cartItems } });
   };
 
   // Transform options to match MenuCard interface
@@ -205,7 +202,14 @@ const Menu = () => {
             </div>
             <div className="text-right">
               <p className="text-sm text-gray-600">Delivery disponível</p>
-              <p className="font-semibold text-green-600">+55 21 97540-6476</p>
+              <Button
+                onClick={() => window.open('https://wa.me/5521975406476', '_blank')}
+                variant="outline"
+                size="sm"
+                className="mt-1"
+              >
+                <span className="font-semibold text-green-600">WhatsApp</span>
+              </Button>
             </div>
           </div>
         </div>

@@ -6,6 +6,11 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import Menu from "./pages/Menu";
+import Checkout from "./pages/Checkout";
+import PaymentConfirmation from "./pages/PaymentConfirmation";
+import OrderSuccess from "./pages/OrderSuccess";
+import StaffLogin from "./pages/StaffLogin";
+import StaffDashboard from "./pages/StaffDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -19,7 +24,11 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/menu" element={<Menu />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+          <Route path="/checkout" element={<Checkout />} />
+          <Route path="/payment-confirmation" element={<PaymentConfirmation />} />
+          <Route path="/order-success" element={<OrderSuccess />} />
+          <Route path="/staff-login" element={<StaffLogin />} />
+          <Route path="/staff-dashboard" element={<StaffDashboard />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
