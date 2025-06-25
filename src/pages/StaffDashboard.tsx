@@ -17,23 +17,47 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-interface Order {
+interface OrderWithDetails {
   id: string;
-  customer_name: string;
-  customer_phone: string;
-  customer_address: string;
-  items: any[];
-  total_amount: number;
+  customer_id: string;
+  delivery_address_id: string;
+  subtotal: number;
+  delivery_fee: number;
+  discount: number;
+  total: number;
   payment_method: string;
   payment_status: string;
-  order_status: string;
+  status: string;
+  notes: string;
+  estimated_delivery_time: string;
+  confirmed_at: string;
+  delivered_at: string;
   created_at: string;
   updated_at: string;
+  customers?: {
+    name: string;
+    phone: string;
+  };
+  delivery_addresses?: {
+    street: string;
+    number: string;
+    complement: string;
+    neighborhood: string;
+    city: string;
+  };
+  order_items?: Array<{
+    quantity: number;
+    unit_price: number;
+    total_price: number;
+    products?: {
+      name: string;
+    };
+  }>;
 }
 
 const StaffDashboard = () => {
   const navigate = useNavigate();
-  const [orders, setOrders] = useState<Order[]>([]);
+  const [orders, setOrders] = useState<OrderWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     totalOrders: 0,
@@ -60,7 +84,12 @@ const StaffDashboard = () => {
     try {
       const { data, error } = await supabase
         .from('orders')
-        .select('*')
+        .select(`
+          *,
+          customers (name, phone),
+          delivery_addresses (street, number, complement, neighborhood, city),
+          order_items (quantity, unit_price, total_price, products (name))
+        `)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -100,7 +129,7 @@ const StaffDashboard = () => {
     oscillator.stop(audioContext.currentTime + 0.3);
   };
 
-  const calculateStats = (orders: Order[]) => {
+  const calculateStats = (orders: OrderWithDetails[]) => {
     const today = new Date().toISOString().split('T')[0];
     const todayOrders = orders.filter(order => 
       order.created_at.startsWith(today)
@@ -109,10 +138,10 @@ const StaffDashboard = () => {
     const stats = {
       totalOrders: orders.length,
       pendingOrders: orders.filter(order => 
-        order.order_status === 'pending' || order.order_status === 'preparing'
+        order.status === 'pending' || order.status === 'preparing'
       ).length,
-      totalRevenue: orders.reduce((sum, order) => sum + order.total_amount, 0),
-      todayRevenue: todayOrders.reduce((sum, order) => sum + order.total_amount, 0)
+      totalRevenue: orders.reduce((sum, order) => sum + order.total, 0),
+      todayRevenue: todayOrders.reduce((sum, order) => sum + order.total, 0)
     };
     
     setStats(stats);
@@ -122,7 +151,7 @@ const StaffDashboard = () => {
     try {
       const { error } = await supabase
         .from('orders')
-        .update({ order_status: status })
+        .update({ status: status })
         .eq('id', orderId);
 
       if (error) throw error;
@@ -139,7 +168,7 @@ const StaffDashboard = () => {
       const { error } = await supabase
         .from('orders')
         .update({ 
-          payment_status: 'confirmed',
+          payment_status: 'paid',
           confirmed_at: new Date().toISOString()
         })
         .eq('id', orderId);
@@ -173,7 +202,7 @@ const StaffDashboard = () => {
   const getPaymentStatusColor = (status: string) => {
     switch (status) {
       case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'confirmed': return 'bg-green-100 text-green-800';
+      case 'paid': return 'bg-green-100 text-green-800';
       case 'failed': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
     }
@@ -282,7 +311,7 @@ const StaffDashboard = () => {
               </TabsList>
 
               <TabsContent value="pending" className="space-y-4">
-                {orders.filter(order => order.order_status === 'pending').map(order => (
+                {orders.filter(order => order.status === 'pending').map(order => (
                   <OrderCard 
                     key={order.id} 
                     order={order} 
@@ -293,7 +322,7 @@ const StaffDashboard = () => {
               </TabsContent>
 
               <TabsContent value="preparing" className="space-y-4">
-                {orders.filter(order => order.order_status === 'preparing').map(order => (
+                {orders.filter(order => order.status === 'preparing').map(order => (
                   <OrderCard 
                     key={order.id} 
                     order={order} 
@@ -304,7 +333,7 @@ const StaffDashboard = () => {
               </TabsContent>
 
               <TabsContent value="ready" className="space-y-4">
-                {orders.filter(order => order.order_status === 'ready').map(order => (
+                {orders.filter(order => order.status === 'ready').map(order => (
                   <OrderCard 
                     key={order.id} 
                     order={order} 
@@ -338,7 +367,7 @@ const OrderCard = ({
   onStatusUpdate, 
   onPaymentConfirm 
 }: { 
-  order: Order; 
+  order: OrderWithDetails; 
   onStatusUpdate: (id: string, status: string) => void;
   onPaymentConfirm: (id: string) => void;
 }) => {
@@ -356,10 +385,16 @@ const OrderCard = ({
   const getPaymentStatusColor = (status: string) => {
     switch (status) {
       case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'confirmed': return 'bg-green-100 text-green-800';
+      case 'paid': return 'bg-green-100 text-green-800';
       case 'failed': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
     }
+  };
+
+  const formatAddress = () => {
+    if (!order.delivery_addresses) return 'Endereço não disponível';
+    const addr = order.delivery_addresses;
+    return `${addr.street}, ${addr.number}${addr.complement ? `, ${addr.complement}` : ''} - ${addr.neighborhood}, ${addr.city}`;
   };
 
   return (
@@ -374,11 +409,11 @@ const OrderCard = ({
           </div>
           <div className="text-right">
             <p className="text-lg font-bold text-green-600">
-              R$ {order.total_amount.toFixed(2).replace('.', ',')}
+              R$ {order.total.toFixed(2).replace('.', ',')}
             </p>
             <div className="flex gap-2 mt-2">
-              <Badge className={getStatusColor(order.order_status)}>
-                {order.order_status}
+              <Badge className={getStatusColor(order.status)}>
+                {order.status}
               </Badge>
               <Badge className={getPaymentStatusColor(order.payment_status)}>
                 {order.payment_status}
@@ -389,19 +424,24 @@ const OrderCard = ({
 
         <div className="grid md:grid-cols-2 gap-4 mb-4">
           <div>
-            <p className="font-medium">{order.customer_name}</p>
-            <p className="text-sm text-gray-600">{order.customer_phone}</p>
-            <p className="text-sm text-gray-600">{order.customer_address}</p>
+            <p className="font-medium">{order.customers?.name || 'Cliente não identificado'}</p>
+            <p className="text-sm text-gray-600">{order.customers?.phone || 'Telefone não disponível'}</p>
+            <p className="text-sm text-gray-600">{formatAddress()}</p>
           </div>
           <div>
             <p className="font-medium">Itens:</p>
-            <ul className="text-sm text-gray-600">
-              {order.items.map((item: any, index: number) => (
-                <li key={index}>
-                  {item.quantity}x {item.name} - R$ {item.totalPrice.toFixed(2).replace('.', ',')}
-                </li>
-              ))}
-            </ul>
+            <div className="text-sm text-gray-600">
+              {order.order_items?.map((item, index) => (
+                <div key={index}>
+                  {item.quantity}x {item.products?.name || 'Item'} - R$ {item.total_price.toFixed(2).replace('.', ',')}
+                </div>
+              )) || <div>Itens não disponíveis</div>}
+            </div>
+            {order.notes && (
+              <div className="mt-2">
+                <p className="text-xs text-gray-500">Obs: {order.notes}</p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -417,7 +457,7 @@ const OrderCard = ({
             </Button>
           )}
           
-          {order.order_status === 'pending' && (
+          {order.status === 'pending' && (
             <Button
               size="sm"
               onClick={() => onStatusUpdate(order.id, 'preparing')}
@@ -427,7 +467,7 @@ const OrderCard = ({
             </Button>
           )}
           
-          {order.order_status === 'preparing' && (
+          {order.status === 'preparing' && (
             <Button
               size="sm"
               onClick={() => onStatusUpdate(order.id, 'ready')}
@@ -437,7 +477,7 @@ const OrderCard = ({
             </Button>
           )}
           
-          {order.order_status === 'ready' && (
+          {order.status === 'ready' && (
             <Button
               size="sm"
               onClick={() => onStatusUpdate(order.id, 'delivered')}

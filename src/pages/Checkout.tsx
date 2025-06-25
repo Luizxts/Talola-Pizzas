@@ -47,31 +47,100 @@ const Checkout = () => {
         ? generatePixQRCode(finalTotal, customerData.name)
         : null;
 
-      // Create order
-      const { data, error } = await supabase
-        .from('orders')
+      // Create customer first
+      const { data: customerResult, error: customerError } = await supabase
+        .from('customers')
         .insert({
-          customer_name: customerData.name,
-          customer_phone: customerData.phone,
-          customer_address: `${customerData.address}${customerData.complement ? `, ${customerData.complement}` : ''}`,
-          items: cartItems,
-          total_amount: finalTotal,
-          payment_method: customerData.paymentMethod,
-          qr_code_data: qrCodeData,
-          order_status: 'pending',
-          payment_status: customerData.paymentMethod === 'pix' ? 'pending' : 'confirmed'
+          name: customerData.name,
+          phone: customerData.phone
         })
         .select()
         .single();
 
-      if (error) throw error;
+      if (customerError) throw customerError;
+
+      // Create delivery address
+      const addressParts = customerData.address.split(',').map(part => part.trim());
+      const { data: addressResult, error: addressError } = await supabase
+        .from('delivery_addresses')
+        .insert({
+          customer_id: customerResult.id,
+          street: addressParts[0] || customerData.address,
+          number: addressParts[1] || '0',
+          complement: customerData.complement,
+          neighborhood: addressParts[2] || 'Centro',
+          city: addressParts[3] || 'Rio de Janeiro',
+          is_default: true
+        })
+        .select()
+        .single();
+
+      if (addressError) throw addressError;
+
+      // Create order
+      const { data: orderResult, error: orderError } = await supabase
+        .from('orders')
+        .insert({
+          customer_id: customerResult.id,
+          delivery_address_id: addressResult.id,
+          subtotal: total,
+          delivery_fee: deliveryFee,
+          total: finalTotal,
+          payment_method: customerData.paymentMethod,
+          payment_status: customerData.paymentMethod === 'pix' ? 'pending' : 'paid',
+          status: 'pending',
+          notes: `Items: ${cartItems.map(item => `${item.quantity}x ${item.name}`).join(', ')}`
+        })
+        .select()
+        .single();
+
+      if (orderError) throw orderError;
+
+      // Create order items
+      for (const item of cartItems) {
+        const { error: itemError } = await supabase
+          .from('order_items')
+          .insert({
+            order_id: orderResult.id,
+            product_id: item.id,
+            quantity: item.quantity,
+            unit_price: item.basePrice,
+            total_price: item.totalPrice,
+            customizations: item.selectedOptions || {}
+          });
+
+        if (itemError) throw itemError;
+      }
 
       toast.success('Pedido realizado com sucesso!');
       
       if (customerData.paymentMethod === 'pix') {
-        navigate('/payment-confirmation', { state: { order: data, qrCodeData } });
+        navigate('/payment-confirmation', { 
+          state: { 
+            order: { 
+              ...orderResult, 
+              customer_name: customerData.name,
+              customer_phone: customerData.phone,
+              customer_address: customerData.address,
+              items: cartItems,
+              total_amount: finalTotal,
+              qr_code_data: qrCodeData
+            }
+          } 
+        });
       } else {
-        navigate('/order-success', { state: { order: data } });
+        navigate('/order-success', { 
+          state: { 
+            order: {
+              ...orderResult,
+              customer_name: customerData.name,
+              customer_phone: customerData.phone,
+              customer_address: customerData.address,
+              items: cartItems,
+              total_amount: finalTotal
+            }
+          } 
+        });
       }
     } catch (error) {
       console.error('Erro ao criar pedido:', error);
