@@ -163,6 +163,15 @@ const Menu = () => {
     // navigate('/checkout');
   };
 
+  // Transform options to match MenuCard interface
+  const transformOptions = (options: ProductOption[]) => {
+    return options.map(option => ({
+      id: option.id,
+      name: option.name,
+      priceModifier: option.price_modifier
+    }));
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -236,7 +245,7 @@ const Menu = () => {
                             description={product.description}
                             basePrice={product.base_price}
                             imageUrl={product.image_url}
-                            options={productOptions[product.id] || []}
+                            options={transformOptions(productOptions[product.id] || [])}
                             onAddToCart={handleAddToCart}
                           />
                         ))}
