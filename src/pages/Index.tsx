@@ -2,11 +2,71 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Clock, MapPin, Phone, Star, Utensils } from "lucide-react";
+import { Clock, MapPin, Phone, Utensils } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const Index = () => {
   const navigate = useNavigate();
+
+  const handleAddSpecialToCart = (special: any) => {
+    // Get existing cart from localStorage or create new one
+    const existingCart = JSON.parse(localStorage.getItem('cart') || '[]');
+    
+    // Add the special offer to cart
+    const cartItem = {
+      id: special.id,
+      name: special.name,
+      basePrice: special.price,
+      quantity: 1,
+      totalPrice: special.price,
+      selectedOptions: {},
+      isSpecialOffer: true
+    };
+
+    // Check if item already exists in cart
+    const existingItemIndex = existingCart.findIndex((item: any) => 
+      item.id === special.id && item.isSpecialOffer
+    );
+
+    if (existingItemIndex >= 0) {
+      existingCart[existingItemIndex].quantity += 1;
+      existingCart[existingItemIndex].totalPrice += special.price;
+    } else {
+      existingCart.push(cartItem);
+    }
+
+    localStorage.setItem('cart', JSON.stringify(existingCart));
+    
+    // Navigate to menu with cart updated
+    navigate('/menu');
+  };
+
+  const specialOffers = [
+    {
+      id: 'special-pizza-gigante',
+      name: 'Pizza Doce Gigante',
+      description: '60cm de pura delícia',
+      price: 80.00,
+      badge: 'PROMOÇÃO',
+      badgeColor: 'bg-red-600'
+    },
+    {
+      id: 'special-combo-burger',
+      name: 'Combo Burger',
+      description: 'Burger + Batata + Refrigerante',
+      price: 25.00,
+      badge: 'COMBO',
+      badgeColor: 'bg-green-600'
+    },
+    {
+      id: 'special-acai-combo',
+      name: 'Açaí + 3 Acompanhamentos',
+      description: '500ml de açaí cremoso',
+      price: 15.00,
+      badge: 'ESPECIAL',
+      badgeColor: 'bg-purple-600'
+    }
+  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50">
@@ -81,41 +141,28 @@ const Index = () => {
         <div className="container mx-auto px-4">
           <h2 className="text-3xl font-bold text-center mb-12">Ofertas Especiais</h2>
           <div className="grid md:grid-cols-3 gap-8">
-            <Card className="border-2 border-red-200 hover:border-red-400 transition-colors">
-              <CardHeader>
-                <Badge className="bg-red-600 text-white w-fit">PROMOÇÃO</Badge>
-                <CardTitle className="text-red-600">Pizza Doce Gigante</CardTitle>
-                <CardDescription>60cm de pura delícia</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-green-600 mb-2">R$ 80,00</div>
-                <p className="text-gray-600 text-sm">Perfeita para compartilhar!</p>
-              </CardContent>
-            </Card>
-
-            <Card className="border-2 border-green-200 hover:border-green-400 transition-colors">
-              <CardHeader>
-                <Badge className="bg-green-600 text-white w-fit">COMBO</Badge>
-                <CardTitle className="text-green-600">Combo Burger</CardTitle>
-                <CardDescription>Burger + Batata + Refrigerante</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-green-600 mb-2">R$ 25,00</div>
-                <p className="text-gray-600 text-sm">Economia garantida!</p>
-              </CardContent>
-            </Card>
-
-            <Card className="border-2 border-purple-200 hover:border-purple-400 transition-colors">
-              <CardHeader>
-                <Badge className="bg-purple-600 text-white w-fit">ESPECIAL</Badge>
-                <CardTitle className="text-purple-600">Açaí + 3 Acompanhamentos</CardTitle>
-                <CardDescription>500ml de açaí cremoso</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-green-600 mb-2">R$ 15,00</div>
-                <p className="text-gray-600 text-sm">Delícia refrescante!</p>
-              </CardContent>
-            </Card>
+            {specialOffers.map((special) => (
+              <Card key={special.id} className="border-2 border-red-200 hover:border-red-400 transition-colors">
+                <CardHeader>
+                  <Badge className={`${special.badgeColor} text-white w-fit`}>
+                    {special.badge}
+                  </Badge>
+                  <CardTitle className="text-red-600">{special.name}</CardTitle>
+                  <CardDescription>{special.description}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-green-600 mb-4">
+                    R$ {special.price.toFixed(2).replace('.', ',')}
+                  </div>
+                  <Button 
+                    onClick={() => handleAddSpecialToCart(special)}
+                    className="w-full bg-red-600 hover:bg-red-700"
+                  >
+                    Adicionar ao Carrinho
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </div>
       </section>
@@ -170,59 +217,6 @@ const Index = () => {
                 <p className="text-sm text-gray-600">
                   Estamos aqui para lhe servir bem!
                 </p>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </section>
-
-      {/* Avaliações */}
-      <section className="py-16 bg-white">
-        <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center mb-12">O que nossos clientes dizem</h2>
-          <div className="grid md:grid-cols-3 gap-8">
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center mb-4">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="h-5 w-5 text-yellow-400 fill-current" />
-                  ))}
-                </div>
-                <p className="text-gray-600 mb-4">
-                  "As pizzas doces são incríveis! A de Prestígio é minha favorita. 
-                  Entrega rápida e sempre quentinha."
-                </p>
-                <p className="font-semibold">Maria Silva</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center mb-4">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="h-5 w-5 text-yellow-400 fill-current" />
-                  ))}
-                </div>
-                <p className="text-gray-600 mb-4">
-                  "Os burgers são muito saborosos! O X-Tudo é perfeito. 
-                  Preço justo e qualidade excelente."
-                </p>
-                <p className="font-semibold">João Santos</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center mb-4">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="h-5 w-5 text-yellow-400 fill-current" />
-                  ))}
-                </div>
-                <p className="text-gray-600 mb-4">
-                  "Atendimento nota 10! Sempre muito educados e o açaí é delicioso. 
-                  Recomendo muito!"
-                </p>
-                <p className="font-semibold">Ana Costa</p>
               </CardContent>
             </Card>
           </div>

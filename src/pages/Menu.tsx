@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import MenuCard from '@/components/MenuCard';
@@ -37,6 +38,7 @@ interface CartItem {
   quantity: number;
   totalPrice: number;
   selectedOptions?: Record<string, any>;
+  isSpecialOffer?: boolean;
 }
 
 const Menu = () => {
@@ -49,7 +51,15 @@ const Menu = () => {
 
   useEffect(() => {
     fetchMenuData();
+    // Load cart from localStorage on component mount
+    const savedCart = JSON.parse(localStorage.getItem('cart') || '[]');
+    setCartItems(savedCart);
   }, []);
+
+  // Save cart to localStorage whenever cartItems changes
+  useEffect(() => {
+    localStorage.setItem('cart', JSON.stringify(cartItems));
+  }, [cartItems]);
 
   const fetchMenuData = async () => {
     try {
@@ -110,7 +120,8 @@ const Menu = () => {
   const handleAddToCart = (item: any) => {
     const existingItemIndex = cartItems.findIndex(cartItem => 
       cartItem.id === item.id && 
-      JSON.stringify(cartItem.selectedOptions) === JSON.stringify(item.selectedOptions)
+      JSON.stringify(cartItem.selectedOptions) === JSON.stringify(item.selectedOptions) &&
+      cartItem.isSpecialOffer === item.isSpecialOffer
     );
 
     if (existingItemIndex >= 0) {
@@ -125,29 +136,28 @@ const Menu = () => {
     toast.success('Item adicionado ao carrinho!');
   };
 
-  const handleUpdateQuantity = (itemId: string, newQuantity: number) => {
+  const handleUpdateQuantity = (itemIndex: number, newQuantity: number) => {
     if (newQuantity <= 0) {
-      handleRemoveItem(itemId);
+      handleRemoveItem(itemIndex);
       return;
     }
 
-    const updatedItems = cartItems.map(item => {
-      if (item.id === itemId) {
-        const pricePerUnit = item.totalPrice / item.quantity;
-        return {
-          ...item,
-          quantity: newQuantity,
-          totalPrice: pricePerUnit * newQuantity
-        };
-      }
-      return item;
-    });
+    const updatedItems = [...cartItems];
+    const item = updatedItems[itemIndex];
+    const pricePerUnit = item.totalPrice / item.quantity;
+    
+    updatedItems[itemIndex] = {
+      ...item,
+      quantity: newQuantity,
+      totalPrice: pricePerUnit * newQuantity
+    };
 
     setCartItems(updatedItems);
   };
 
-  const handleRemoveItem = (itemId: string) => {
-    setCartItems(cartItems.filter(item => item.id !== itemId));
+  const handleRemoveItem = (itemIndex: number) => {
+    const updatedItems = cartItems.filter((_, index) => index !== itemIndex);
+    setCartItems(updatedItems);
     toast.success('Item removido do carrinho');
   };
 

@@ -18,12 +18,13 @@ interface CartItem {
   quantity: number;
   totalPrice: number;
   selectedOptions?: Record<string, any>;
+  isSpecialOffer?: boolean;
 }
 
 const Checkout = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const cartItems: CartItem[] = location.state?.cartItems || [];
+  const cartItems: CartItem[] = location.state?.cartItems || JSON.parse(localStorage.getItem('cart') || '[]');
   const total = cartItems.reduce((sum, item) => sum + item.totalPrice, 0);
   const deliveryFee = 5.00;
   const finalTotal = total + deliveryFee;
@@ -42,7 +43,7 @@ const Checkout = () => {
     setLoading(true);
 
     try {
-      // Generate QR Code data for PIX
+      // Generate QR Code data for PIX with correct recipient info
       const qrCodeData = customerData.paymentMethod === 'pix' 
         ? generatePixQRCode(finalTotal, customerData.name)
         : null;
@@ -102,7 +103,7 @@ const Checkout = () => {
           .from('order_items')
           .insert({
             order_id: orderResult.id,
-            product_id: item.id,
+            product_id: item.isSpecialOffer ? null : item.id, // Special offers don't have product_id
             quantity: item.quantity,
             unit_price: item.basePrice,
             total_price: item.totalPrice,
@@ -111,6 +112,9 @@ const Checkout = () => {
 
         if (itemError) throw itemError;
       }
+
+      // Clear cart after successful order
+      localStorage.removeItem('cart');
 
       toast.success('Pedido realizado com sucesso!');
       
@@ -151,11 +155,12 @@ const Checkout = () => {
   };
 
   const generatePixQRCode = (amount: number, customerName: string) => {
-    // Simplified PIX QR Code generation - in production, use proper PIX API
+    // PIX QR Code generation with correct recipient data
     const pixData = {
       amount: amount.toFixed(2),
       description: `Pedido TALOLA - ${customerName}`,
-      merchantName: 'TALOLA Pizzas e Burgers',
+      merchantName: 'Rayane Cabral',
+      merchantPhone: '21975406476',
       merchantCity: 'Rio de Janeiro',
       txId: `TALOLA${Date.now()}`
     };
@@ -179,6 +184,7 @@ const Checkout = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Header */}
       <header className="bg-white shadow-sm border-b sticky top-0 z-40">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center gap-4">
@@ -205,10 +211,15 @@ const Checkout = () => {
             <CardContent>
               <div className="space-y-4">
                 {cartItems.map((item, index) => (
-                  <div key={index} className="flex justify-between items-center">
+                  <div key={`${item.id}-${index}`} className="flex justify-between items-center">
                     <div>
                       <p className="font-medium">{item.name}</p>
                       <p className="text-sm text-gray-600">{item.quantity}x</p>
+                      {item.isSpecialOffer && (
+                        <Badge className="bg-green-100 text-green-800 text-xs">
+                          Oferta Especial
+                        </Badge>
+                      )}
                     </div>
                     <p className="font-medium">R$ {item.totalPrice.toFixed(2).replace('.', ',')}</p>
                   </div>
@@ -292,7 +303,7 @@ const Checkout = () => {
                       <RadioGroupItem value="pix" id="pix" />
                       <Label htmlFor="pix" className="flex items-center gap-2">
                         <Smartphone className="h-4 w-4" />
-                        PIX
+                        PIX - Rayane Cabral
                       </Label>
                     </div>
                     <div className="flex items-center space-x-2">

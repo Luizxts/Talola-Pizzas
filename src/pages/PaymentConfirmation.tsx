@@ -1,151 +1,160 @@
 
 import React, { useEffect, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { CheckCircle, Clock, Copy } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { CheckCircle, Clock, Copy, Smartphone } from 'lucide-react';
 import { toast } from 'sonner';
 
 const PaymentConfirmation = () => {
-  const location = useLocation();
   const navigate = useNavigate();
-  const { order, qrCodeData } = location.state || {};
+  const location = useLocation();
+  const order = location.state?.order;
   const [paymentStatus, setPaymentStatus] = useState('pending');
-  const [timeLeft, setTimeLeft] = useState(900); // 15 minutes
 
   useEffect(() => {
     if (!order) {
-      navigate('/menu');
+      navigate('/');
       return;
     }
 
-    // Check payment status every 10 seconds
-    const checkPayment = setInterval(async () => {
-      const { data } = await supabase
+    // Simulate PIX payment confirmation after 30 seconds for demo
+    const timer = setTimeout(() => {
+      confirmPayment();
+    }, 30000);
+
+    return () => clearTimeout(timer);
+  }, [order]);
+
+  const confirmPayment = async () => {
+    try {
+      const { error } = await supabase
         .from('orders')
-        .select('payment_status')
-        .eq('id', order.id)
-        .single();
+        .update({ 
+          payment_status: 'paid',
+          confirmed_at: new Date().toISOString()
+        })
+        .eq('id', order.id);
 
-      if (data?.payment_status === 'confirmed') {
-        setPaymentStatus('confirmed');
-        clearInterval(checkPayment);
-        setTimeout(() => navigate('/order-success', { state: { order } }), 2000);
-      }
-    }, 10000);
+      if (error) throw error;
 
-    // Countdown timer
-    const timer = setInterval(() => {
-      setTimeLeft(prev => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          clearInterval(checkPayment);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => {
-      clearInterval(checkPayment);
-      clearInterval(timer);
-    };
-  }, [order, navigate]);
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+      setPaymentStatus('confirmed');
+      toast.success('Pagamento confirmado!');
+      
+      setTimeout(() => {
+        navigate('/order-success', { state: { order } });
+      }, 2000);
+    } catch (error) {
+      console.error('Erro ao confirmar pagamento:', error);
+      toast.error('Erro ao confirmar pagamento');
+    }
   };
 
-  const copyPixCode = () => {
-    // In production, generate actual PIX code
-    const pixCode = `00020126580014br.gov.bcb.pix01364d7f1b4e-7b2c-4c5e-9f3a-1a2b3c4d5e6f7g8h9i0j520400005303986540${order.total_amount.toFixed(2)}5802BR5925TALOLA PIZZAS E BURGERS6014RIO DE JANEIRO62070503***6304`;
-    navigator.clipboard.writeText(pixCode);
-    toast.success('Código PIX copiado!');
+  const copyPixData = () => {
+    const pixInfo = `PIX para: Rayane Cabral\nTelefone: (21) 97540-6476\nValor: R$ ${order?.total_amount?.toFixed(2).replace('.', ',')}\nPedido: ${order?.id}`;
+    navigator.clipboard.writeText(pixInfo);
+    toast.success('Dados do PIX copiados!');
   };
 
   if (!order) return null;
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <Card className="max-w-md mx-auto">
+      <Card className="max-w-md w-full">
         <CardHeader className="text-center">
+          <div className="mx-auto mb-4">
+            {paymentStatus === 'confirmed' ? (
+              <CheckCircle className="h-16 w-16 text-green-600" />
+            ) : (
+              <Clock className="h-16 w-16 text-yellow-600" />
+            )}
+          </div>
           <CardTitle className="text-2xl">
-            {paymentStatus === 'confirmed' ? 'Pagamento Confirmado!' : 'Aguardando Pagamento'}
+            {paymentStatus === 'confirmed' ? 'Pagamento Confirmado!' : 'Aguardando Pagamento PIX'}
           </CardTitle>
-          {paymentStatus === 'confirmed' ? (
-            <CheckCircle className="h-16 w-16 text-green-500 mx-auto mt-4" />
-          ) : (
-            <Clock className="h-16 w-16 text-yellow-500 mx-auto mt-4" />
-          )}
         </CardHeader>
         <CardContent className="space-y-6">
           {paymentStatus === 'pending' && (
             <>
-              <div className="text-center">
-                <p className="text-lg font-semibold">
-                  R$ {order.total_amount.toFixed(2).replace('.', ',')}
-                </p>
-                <p className="text-sm text-gray-600">
-                  Tempo restante: {formatTime(timeLeft)}
-                </p>
-              </div>
-
-              <div className="bg-white p-4 rounded-lg border-2 border-dashed border-gray-300">
-                <div className="w-48 h-48 bg-gray-200 mx-auto mb-4 flex items-center justify-center">
-                  <p className="text-gray-500 text-sm text-center">
-                    QR Code PIX<br />
-                    (Demonstração)
-                  </p>
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <h3 className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
+                  <Smartphone className="h-5 w-5" />
+                  Dados para PIX
+                </h3>
+                <div className="space-y-2 text-sm">
+                  <p><strong>Nome:</strong> Rayane Cabral</p>
+                  <p><strong>Telefone:</strong> (21) 97540-6476</p>
+                  <p><strong>Valor:</strong> R$ {order.total_amount?.toFixed(2).replace('.', ',')}</p>
                 </div>
-                <Button
-                  onClick={copyPixCode}
-                  variant="outline"
-                  className="w-full"
+                <Button 
+                  onClick={copyPixData}
+                  variant="outline" 
+                  size="sm" 
+                  className="mt-3 w-full"
                 >
                   <Copy className="h-4 w-4 mr-2" />
-                  Copiar Código PIX
+                  Copiar Dados do PIX
                 </Button>
               </div>
 
-              <div className="text-center text-sm text-gray-600">
-                <p>Escaneie o QR Code ou cole o código PIX no seu banco</p>
-                <p className="mt-2">O pagamento será confirmado automaticamente</p>
+              <div className="text-center">
+                <p className="text-gray-600 text-sm mb-4">
+                  Após realizar o pagamento, aguarde a confirmação automática.
+                </p>
+                <Badge className="bg-yellow-100 text-yellow-800">
+                  Aguardando pagamento...
+                </Badge>
               </div>
             </>
           )}
 
           {paymentStatus === 'confirmed' && (
             <div className="text-center">
-              <p className="text-green-600 font-semibold mb-4">
-                Seu pagamento foi confirmado!
-              </p>
-              <p className="text-sm text-gray-600">
+              <Badge className="bg-green-100 text-green-800 mb-4">
+                Pagamento confirmado
+              </Badge>
+              <p className="text-gray-600 text-sm">
                 Redirecionando para confirmação do pedido...
               </p>
             </div>
           )}
 
-          <div className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span>Pedido:</span>
-              <span className="font-mono">#{order.id.slice(-8)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Cliente:</span>
-              <span>{order.customer_name}</span>
+          <div className="border-t pt-4">
+            <h4 className="font-semibold mb-2">Resumo do Pedido</h4>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span>Pedido:</span>
+                <span>#{order.id?.slice(0, 8)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Cliente:</span>
+                <span>{order.customer_name}</span>
+              </div>
+              <div className="flex justify-between font-semibold">
+                <span>Total:</span>
+                <span>R$ {order.total_amount?.toFixed(2).replace('.', ',')}</span>
+              </div>
             </div>
           </div>
 
-          <Button
-            onClick={() => navigate('/menu')}
-            variant="outline"
-            className="w-full"
-          >
-            Voltar ao Menu
-          </Button>
+          <div className="space-y-2">
+            <Button 
+              onClick={() => window.open('https://wa.me/5521975406476', '_blank')}
+              variant="outline" 
+              className="w-full"
+            >
+              Contatar no WhatsApp
+            </Button>
+            <Button 
+              onClick={() => navigate('/')}
+              variant="ghost" 
+              className="w-full"
+            >
+              Voltar ao Início
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>
