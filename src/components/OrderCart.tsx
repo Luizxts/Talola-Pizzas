@@ -13,12 +13,13 @@ interface CartItem {
   quantity: number;
   totalPrice: number;
   selectedOptions?: Record<string, any>;
+  isSpecialOffer?: boolean;
 }
 
 interface OrderCartProps {
   items: CartItem[];
-  onUpdateQuantity: (itemId: string, newQuantity: number) => void;
-  onRemoveItem: (itemId: string) => void;
+  onUpdateQuantity: (itemIndex: number, newQuantity: number) => void;
+  onRemoveItem: (itemIndex: number) => void;
   onCheckout: () => void;
 }
 
@@ -62,19 +63,26 @@ const OrderCart: React.FC<OrderCartProps> = ({
       <CardContent className="space-y-4">
         {/* Cart Items */}
         <div className="space-y-3 max-h-96 overflow-y-auto">
-          {items.map((item) => (
-            <div key={`${item.id}-${JSON.stringify(item.selectedOptions)}`} className="border rounded-lg p-3">
+          {items.map((item, index) => (
+            <div key={`${item.id}-${index}-${JSON.stringify(item.selectedOptions)}`} className="border rounded-lg p-3">
               <div className="flex justify-between items-start mb-2">
                 <h4 className="font-medium text-sm">{item.name}</h4>
                 <Button
                   size="sm"
                   variant="ghost"
-                  onClick={() => onRemoveItem(item.id)}
+                  onClick={() => onRemoveItem(index)}
                   className="text-red-600 hover:text-red-700 p-1"
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
+              
+              {/* Special Offer Badge */}
+              {item.isSpecialOffer && (
+                <Badge className="bg-green-100 text-green-800 text-xs mb-2">
+                  Oferta Especial
+                </Badge>
+              )}
               
               {/* Selected Options */}
               {item.selectedOptions && Object.keys(item.selectedOptions).length > 0 && (
@@ -92,7 +100,7 @@ const OrderCart: React.FC<OrderCartProps> = ({
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => onUpdateQuantity(item.id, Math.max(1, item.quantity - 1))}
+                    onClick={() => onUpdateQuantity(index, Math.max(1, item.quantity - 1))}
                     disabled={item.quantity <= 1}
                     className="h-6 w-6 p-0"
                   >
@@ -102,7 +110,7 @@ const OrderCart: React.FC<OrderCartProps> = ({
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => onUpdateQuantity(item.id, item.quantity + 1)}
+                    onClick={() => onUpdateQuantity(index, item.quantity + 1)}
                     className="h-6 w-6 p-0"
                   >
                     <Plus className="h-3 w-3" />
