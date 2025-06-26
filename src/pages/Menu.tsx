@@ -287,7 +287,7 @@ const Menu = () => {
                                   {formatPrice(product.base_price)}
                                 </span>
                                 <Badge className="bg-orange-600 text-white">
-                                  {product.preparation_time || 30} min
+                                  30 min
                                 </Badge>
                               </div>
 

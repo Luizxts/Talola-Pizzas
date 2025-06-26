@@ -97,7 +97,9 @@ const Checkout = () => {
 
       if (addressError) throw addressError;
 
-      // Criar pedido
+      // Criar pedido - converter Date para string ISO
+      const estimatedDeliveryTime = new Date(Date.now() + 45 * 60000).toISOString();
+      
       const { data: orderResult, error: orderError } = await supabase
         .from('orders')
         .insert({
@@ -110,7 +112,7 @@ const Checkout = () => {
           payment_status: customerData.paymentMethod === 'pix' ? 'pending' : 'paid',
           status: 'pending',
           notes: `Items: ${cartItems.map(item => `${item.quantity}x ${item.name}`).join(', ')}`,
-          estimated_delivery_time: new Date(Date.now() + 45 * 60000) // 45 minutos
+          estimated_delivery_time: estimatedDeliveryTime
         })
         .select()
         .single();
