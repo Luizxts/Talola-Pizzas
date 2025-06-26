@@ -1,244 +1,176 @@
 
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { ShoppingCart } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import { Link } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { Clock, Phone, MapPin, Star, ShoppingCart } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet"
-import { Menu as MenuIcon } from 'lucide-react';
-import OrderCart from '@/components/OrderCart';
-import { Separator } from '@/components/ui/separator';
-import { useToast } from "@/components/ui/use-toast"
-import Logo from '@/components/Logo';
+import { Badge } from '@/components/ui/badge';
+import { toast } from 'sonner';
+
+interface Product {
+  id: string;
+  name: string;
+  description: string;
+  base_price: number;
+  image_url?: string;
+  category_id: string;
+}
+
+interface Category {
+  id: string;
+  name: string;
+  description?: string;
+}
 
 const Index = () => {
-  const [cartItems, setCartItems] = useState<any[]>([]);
-  const [isCartOpen, setIsCartOpen] = useState(false);
-  const navigate = useNavigate();
-  const { toast } = useToast()
+  const [isStoreOpen, setIsStoreOpen] = useState(false);
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [products, setProducts] = useState<Record<string, Product[]>>({});
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Load cart items from local storage on component mount
-    const storedCart = localStorage.getItem('cartItems');
-    if (storedCart) {
-      setCartItems(JSON.parse(storedCart));
-    }
+    checkStoreHours();
+    fetchMenuData();
+    
+    const interval = setInterval(() => {
+      setCurrentTime(new Date());
+      checkStoreHours();
+    }, 60000); // Atualiza a cada minuto
+
+    return () => clearInterval(interval);
   }, []);
 
-  useEffect(() => {
-    // Save cart items to local storage whenever cartItems changes
-    localStorage.setItem('cartItems', JSON.stringify(cartItems));
-  }, [cartItems]);
+  const checkStoreHours = () => {
+    const now = new Date();
+    const hour = now.getHours();
+    const isOpen = hour >= 18 || hour < 1; // 18:00 às 00:59
+    setIsStoreOpen(isOpen);
+  };
 
-  const addToCart = (item: any) => {
-    const existingItemIndex = cartItems.findIndex(
-      (cartItem) => cartItem.id === item.id && JSON.stringify(cartItem.selectedOptions) === JSON.stringify(item.selectedOptions)
-    );
+  const fetchMenuData = async () => {
+    try {
+      const { data: categoriesData, error: categoriesError } = await supabase
+        .from('categories')
+        .select('*')
+        .eq('is_active', true)
+        .order('display_order');
 
-    if (existingItemIndex > -1) {
-      const updatedCartItems = [...cartItems];
-      updatedCartItems[existingItemIndex].quantity += 1;
-      updatedCartItems[existingItemIndex].totalPrice = updatedCartItems[existingItemIndex].basePrice * updatedCartItems[existingItemIndex].quantity;
-      setCartItems(updatedCartItems);
-    } else {
-      const newItem = { ...item, quantity: 1, totalPrice: item.basePrice };
-      setCartItems([...cartItems, newItem]);
+      if (categoriesError) throw categoriesError;
+
+      const { data: productsData, error: productsError } = await supabase
+        .from('products')
+        .select('*')
+        .eq('is_active', true)
+        .order('display_order');
+
+      if (productsError) throw productsError;
+
+      const productsByCategory: Record<string, Product[]> = {};
+      productsData?.forEach(product => {
+        if (!productsByCategory[product.category_id]) {
+          productsByCategory[product.category_id] = [];
+        }
+        productsByCategory[product.category_id].push(product);
+      });
+
+      setCategories(categoriesData || []);
+      setProducts(productsByCategory);
+    } catch (error) {
+      console.error('Erro ao carregar dados:', error);
+      toast.error('Erro ao carregar o cardápio');
+    } finally {
+      setLoading(false);
     }
-
-    toast({
-      title: "Item adicionado ao carrinho!",
-      description: "Confira seu pedido no carrinho para finalizar.",
-    })
   };
-
-  const updateQuantity = (itemIndex: number, newQuantity: number) => {
-    const updatedCartItems = [...cartItems];
-    updatedCartItems[itemIndex].quantity = newQuantity;
-    updatedCartItems[itemIndex].totalPrice = updatedCartItems[itemIndex].basePrice * newQuantity;
-    setCartItems(updatedCartItems);
-  };
-
-  const removeItem = (itemIndex: number) => {
-    const updatedCartItems = cartItems.filter((_, index) => index !== itemIndex);
-    setCartItems(updatedCartItems);
-  };
-
-  const clearCart = () => {
-    setCartItems([]);
-  };
-
-  const calculateTotal = () => {
-    return cartItems.reduce((total, item) => total + item.totalPrice, 0);
-  };
-
-  const handleCheckout = () => {
-    navigate('/checkout');
-  };
-
-  // Produtos baseados nas imagens da Talola
-  const combos = [
-    {
-      id: 'combo1',
-      name: '2 Pizzas Gigante + Pizza Média + Refrigerante 2L',
-      description: 'Temos açaí! Oferta especial com 2 pizzas gigante + 1 pizza média + refrigerante 2L',
-      basePrice: 110.00,
-      image: 'https://images.unsplash.com/photo-1565299624946-b28f40a0994a?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=480&q=80',
-      isSpecialOffer: true,
-      category: 'combos'
-    },
-    {
-      id: 'combo2',
-      name: '2 Pizzas Média + Refrigerante 2L',
-      description: 'Combo com 2 pizzas média + refrigerante 2L',
-      basePrice: 55.00,
-      image: 'https://images.unsplash.com/photo-1604382355076-e3506ca959dd?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=480&q=80',
-      category: 'combos'
-    },
-    {
-      id: 'combo3',
-      name: '2 Pizzas Família + Refrigerante 2L',
-      description: 'Combo com 2 pizzas família + refrigerante 2L',
-      basePrice: 65.00,
-      image: 'https://images.unsplash.com/photo-1628840042765-356cda07504e?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=480&q=80',
-      category: 'combos'
-    }
-  ];
-
-  const burgers = [
-    {
-      id: 'burger1',
-      name: 'X-Burguer',
-      description: 'Pão, carne, queijo, molho especial e salada',
-      basePrice: 7.00,
-      image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=480&q=80',
-      category: 'burgers'
-    },
-    {
-      id: 'burger2',
-      name: 'X-Bacon',
-      description: 'Pão, carne, queijo, bacon, molho especial e salada',
-      basePrice: 10.00,
-      image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=480&q=80',
-      category: 'burgers'
-    },
-    {
-      id: 'burger3',
-      name: 'X-Tudo',
-      description: 'Pão, carne, queijo, ovo, bacon, calabresa, molho especial e salada',
-      basePrice: 12.00,
-      image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=480&q=80',
-      category: 'burgers'
-    }
-  ];
-
-  const pizzasDoces = [
-    {
-      id: 'pizza-doce1',
-      name: 'Pizza de Banana',
-      description: 'Creme de leite, mussarela, banana, canela e açúcar',
-      basePrice: 30.00,
-      image: 'https://images.unsplash.com/photo-1630749458463-01d3c9a587ca?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=480&q=80',
-      category: 'pizzas-doces'
-    },
-    {
-      id: 'pizza-doce2',
-      name: 'Pizza de Chocolate',
-      description: 'Creme de leite, mussarela, banana, chocolate',
-      basePrice: 30.00,
-      image: 'https://images.unsplash.com/photo-1630749458463-01d3c9a587ca?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=480&q=80',
-      category: 'pizzas-doces'
-    },
-    {
-      id: 'pizza-doce3',
-      name: 'Pizza Romeu e Julieta',
-      description: 'Creme de leite, mussarela, goiabada em calda e catupiry',
-      basePrice: 30.00,
-      image: 'https://images.unsplash.com/photo-1630749458463-01d3c9a587ca?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=480&q=80',
-      category: 'pizzas-doces'
-    }
-  ];
-
-  const acai = [
-    {
-      id: 'acai1',
-      name: 'Açaí 250ml',
-      description: 'Açaí cremoso com acompanhamentos à sua escolha',
-      basePrice: 6.00,
-      image: 'https://images.unsplash.com/photo-1628014150673-98824b3a2e68?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=480&q=80',
-      category: 'acai'
-    },
-    {
-      id: 'acai2',
-      name: 'Açaí 500ml',
-      description: 'Açaí cremoso com acompanhamentos à sua escolha',
-      basePrice: 9.00,
-      image: 'https://images.unsplash.com/photo-1628014150673-98824b3a2e68?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=480&q=80',
-      category: 'acai'
-    },
-    {
-      id: 'acai3',
-      name: 'Açaí 770ml',
-      description: 'Açaí cremoso com frutas, chantilly, bis, barra de chocolate e nutella',
-      basePrice: 12.00,
-      image: 'https://images.unsplash.com/photo-1628014150673-98824b3a2e68?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=480&q=80',
-      category: 'acai'
-    }
-  ];
 
   const formatPrice = (price: number) => {
     return `R$ ${price.toFixed(2).replace('.', ',')}`;
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-orange-500 via-red-600 to-pink-700 flex items-center justify-center">
+        <div className="text-center text-white">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-white mx-auto mb-4"></div>
+          <p className="text-xl">Carregando...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isStoreOpen) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-800 via-gray-900 to-black flex items-center justify-center">
+        <div className="text-center text-white max-w-2xl mx-auto px-4">
+          <div className="bg-red-600 text-white rounded-full w-32 h-32 flex items-center justify-center text-6xl font-bold mx-auto mb-8 shadow-2xl">
+            T
+          </div>
+          <h1 className="text-5xl font-bold mb-4">TALOLA PIZZA</h1>
+          <div className="bg-red-600/20 backdrop-blur-sm rounded-xl p-8 border border-red-600/30">
+            <Clock className="h-16 w-16 text-red-400 mx-auto mb-4" />
+            <h2 className="text-3xl font-bold text-red-400 mb-4">LOJA FECHADA</h2>
+            <p className="text-xl mb-6">Estamos fechados no momento.</p>
+            <div className="bg-red-600 text-white px-6 py-4 rounded-lg inline-block">
+              <p className="text-lg font-bold">HORÁRIO DE FUNCIONAMENTO</p>
+              <p className="text-2xl font-bold">18:00 ÀS 00:00</p>
+              <p className="text-sm">Todos os dias</p>
+            </div>
+            <div className="mt-8 space-y-2">
+              <p className="flex items-center justify-center gap-2">
+                <Phone className="h-5 w-5" />
+                <span>(21) 97540-6476</span>
+              </p>
+              <p className="flex items-center justify-center gap-2">
+                <MapPin className="h-5 w-5" />
+                <span>Irapiranga 11 Loja - Rocha Miranda</span>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-yellow-400 via-orange-500 to-red-600">
+    <div className="min-h-screen bg-gradient-to-br from-orange-500 via-red-600 to-pink-700">
       {/* Header */}
-      <header className="bg-black/90 shadow-lg">
+      <header className="bg-black/90 backdrop-blur-sm shadow-xl sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex justify-between items-center">
             <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
-                <div className="bg-yellow-400 text-black rounded-full w-12 h-12 flex items-center justify-center font-bold text-2xl shadow-lg">
-                  T
-                </div>
-                <div>
-                  <h1 className="text-3xl font-bold text-yellow-400">TALOLA</h1>
-                  <p className="text-yellow-300 text-sm">PIZZAS E BURGERS</p>
-                </div>
+              <div className="bg-red-600 text-white rounded-full w-16 h-16 flex items-center justify-center text-3xl font-bold shadow-lg">
+                T
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold text-white">TALOLA PIZZA</h1>
+                <p className="text-orange-300 text-sm">A melhor pizza da região!</p>
               </div>
             </div>
-            <nav className="hidden md:flex space-x-8">
+            
+            <div className="flex items-center space-x-6">
+              <div className="text-white text-center hidden md:block">
+                <div className="flex items-center gap-2">
+                  <Clock className="h-5 w-5 text-green-400" />
+                  <span className="text-green-400 font-bold">ABERTO</span>
+                </div>
+                <p className="text-sm">18:00 - 00:00</p>
+              </div>
+              
               <Link 
                 to="/menu" 
-                className="text-yellow-300 hover:text-yellow-400 transition-colors font-medium"
+                className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-bold transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center gap-2"
               >
-                Cardápio
-              </Link>
-              <a href="#sobre" className="text-yellow-300 hover:text-yellow-400 transition-colors font-medium">
-                Sobre
-              </a>
-              <a href="#contato" className="text-yellow-300 hover:text-yellow-400 transition-colors font-medium">
-                Contato
-              </a>
-            </nav>
-            {/* Cart Icon */}
-            <div className="relative">
-              <Link to="/menu" className="flex items-center space-x-2 bg-yellow-500 text-black px-4 py-2 rounded-lg hover:bg-yellow-600 transition-colors font-bold">
                 <ShoppingCart className="h-5 w-5" />
-                <span className="hidden sm:inline">Cardápio</span>
-                {cartItems.length > 0 && (
-                  <Badge className="bg-red-500 text-white text-xs px-2 py-1 rounded-full ml-2">
-                    {cartItems.length}
-                  </Badge>
-                )}
+                VER CARDÁPIO
+              </Link>
+              
+              <Link 
+                to="/staff-login" 
+                className="text-orange-300 hover:text-white transition-colors text-sm"
+              >
+                Staff
               </Link>
             </div>
           </div>
@@ -246,64 +178,76 @@ const Index = () => {
       </header>
 
       {/* Hero Section */}
-      <section className="py-16 text-center">
+      <section className="py-20 text-center text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-black/80 rounded-lg p-8 shadow-2xl">
-            <h2 className="text-5xl font-extrabold text-yellow-400 mb-4">
-              FUNCIONAMOS
+          <div className="bg-black/60 backdrop-blur-sm rounded-3xl p-12 shadow-2xl border border-white/10">
+            <h2 className="text-6xl font-extrabold mb-6 bg-gradient-to-r from-orange-400 to-red-400 bg-clip-text text-transparent">
+              PIZZA ARTESANAL
             </h2>
-            <p className="text-2xl text-white mb-2">TODOS OS DIAS DAS</p>
-            <p className="text-4xl font-bold text-yellow-400 mb-8">18:00 ÀS 00:00</p>
-            <div className="bg-yellow-400 text-black px-8 py-4 rounded-lg inline-block">
-              <p className="text-lg font-bold">Taxa de entrega a partir de R$ 3,00</p>
+            <p className="text-2xl mb-8 text-orange-100">
+              Feita com ingredientes frescos e muito amor
+            </p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+              <div className="bg-red-600/20 backdrop-blur-sm rounded-xl p-6 border border-red-600/30">
+                <Star className="h-12 w-12 text-yellow-400 mx-auto mb-4" />
+                <h3 className="text-xl font-bold mb-2">QUALIDADE PREMIUM</h3>
+                <p className="text-orange-100">Ingredientes selecionados e massa fresca</p>
+              </div>
+              <div className="bg-red-600/20 backdrop-blur-sm rounded-xl p-6 border border-red-600/30">
+                <Clock className="h-12 w-12 text-green-400 mx-auto mb-4" />
+                <h3 className="text-xl font-bold mb-2">ENTREGA RÁPIDA</h3>
+                <p className="text-orange-100">Até 40 minutos na sua casa</p>
+              </div>
+              <div className="bg-red-600/20 backdrop-blur-sm rounded-xl p-6 border border-red-600/30">
+                <Phone className="h-12 w-12 text-blue-400 mx-auto mb-4" />
+                <h3 className="text-xl font-bold mb-2">ATENDIMENTO</h3>
+                <p className="text-orange-100">(21) 97540-6476</p>
+              </div>
             </div>
+
+            <Link 
+              to="/menu"
+              className="bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white px-12 py-4 rounded-full text-xl font-bold transition-all duration-300 transform hover:scale-105 shadow-xl inline-block"
+            >
+              FAZER PEDIDO AGORA
+            </Link>
           </div>
         </div>
       </section>
 
-      {/* Ofertas Especiais */}
-      <section className="py-12">
+      {/* Menu Preview */}
+      <section className="py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-4xl font-bold text-center text-white mb-8 drop-shadow-lg">
-            OFERTAS ESPECIAIS
+          <h2 className="text-4xl font-bold text-center text-white mb-12">
+            NOSSO CARDÁPIO
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {combos.filter(combo => combo.isSpecialOffer).map((combo) => (
-              <Card key={combo.id} className="border-4 border-yellow-400 bg-black/90 text-white">
-                <CardContent className="p-4">
-                  <div className="relative">
-                    <img
-                      src={combo.image}
-                      alt={combo.name}
-                      className="w-full h-48 object-cover rounded-md mb-4"
-                    />
-                    <Badge className="absolute top-2 right-2 bg-red-500 text-white font-bold">
-                      OFERTA ESPECIAL
-                    </Badge>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {categories.slice(0, 4).map((category) => (
+              <Card key={category.id} className="bg-black/60 backdrop-blur-sm border-white/20 hover:bg-black/70 transition-all duration-300 transform hover:scale-105">
+                <CardContent className="p-6 text-center">
+                  <h3 className="text-2xl font-bold text-white mb-4">{category.name}</h3>
+                  <p className="text-orange-200 mb-6">{category.description}</p>
+                  
+                  <div className="space-y-3 mb-6">
+                    {products[category.id]?.slice(0, 2).map((product) => (
+                      <div key={product.id} className="bg-white/10 rounded-lg p-3">
+                        <div className="flex justify-between items-center">
+                          <span className="text-white font-medium text-sm">{product.name}</span>
+                          <Badge className="bg-red-600 text-white">
+                            {formatPrice(product.base_price)}
+                          </Badge>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                  <h3 className="text-xl font-bold text-yellow-400 mb-2">
-                    {combo.name}
-                  </h3>
-                  <p className="text-white mb-3">{combo.description}</p>
-                  <p className="text-yellow-400 font-bold text-2xl mb-4">
-                    {formatPrice(combo.basePrice)}
-                  </p>
-                  <Button 
-                    className="w-full bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-3"
-                    onClick={() => {
-                      const itemToAdd = {
-                        id: combo.id,
-                        name: combo.name,
-                        basePrice: combo.basePrice,
-                        selectedOptions: {},
-                        isSpecialOffer: true
-                      };
-                      
-                      addToCart(itemToAdd);
-                    }}
-                  >
-                    ADICIONAR AO CARRINHO
-                  </Button>
+                  
+                  <Link to="/menu">
+                    <Button className="w-full bg-red-600 hover:bg-red-700 text-white">
+                      Ver Todos
+                    </Button>
+                  </Link>
                 </CardContent>
               </Card>
             ))}
@@ -311,235 +255,54 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Burgers Section */}
-      <section className="py-12">
+      {/* Contact Info */}
+      <section className="py-16 bg-black/60 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-4xl font-bold text-center text-white mb-8 drop-shadow-lg">
-            BURGERS
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {burgers.map((burger) => (
-              <Card key={burger.id} className="bg-black/90 text-white border-2 border-yellow-400">
-                <CardContent className="p-4">
-                  <img
-                    src={burger.image}
-                    alt={burger.name}
-                    className="w-full h-48 object-cover rounded-md mb-4"
-                  />
-                  <h3 className="text-xl font-bold text-yellow-400 mb-2">
-                    {burger.name}
-                  </h3>
-                  <p className="text-white mb-3">{burger.description}</p>
-                  <p className="text-yellow-400 font-bold text-xl mb-4">
-                    {formatPrice(burger.basePrice)}
-                  </p>
-                  <Button className="w-full bg-yellow-500 hover:bg-yellow-600 text-black font-bold">
-                    <Link to="/menu">
-                      VER OPÇÕES E PEDIR
-                    </Link>
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Pizzas Doces Section */}
-      <section className="py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-4xl font-bold text-center text-white mb-8 drop-shadow-lg">
-            PIZZAS DOCES
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {pizzasDoces.map((pizza) => (
-              <Card key={pizza.id} className="bg-black/90 text-white border-2 border-yellow-400">
-                <CardContent className="p-4">
-                  <img
-                    src={pizza.image}
-                    alt={pizza.name}
-                    className="w-full h-48 object-cover rounded-md mb-4"
-                  />
-                  <h3 className="text-xl font-bold text-yellow-400 mb-2">
-                    {pizza.name}
-                  </h3>
-                  <p className="text-white mb-3">{pizza.description}</p>
-                  <p className="text-yellow-400 font-bold text-xl mb-4">
-                    A partir de {formatPrice(pizza.basePrice)}
-                  </p>
-                  <Button className="w-full bg-yellow-500 hover:bg-yellow-600 text-black font-bold">
-                    <Link to="/menu">
-                      VER OPÇÕES E PEDIR
-                    </Link>
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Açaí Section */}
-      <section className="py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-4xl font-bold text-center text-white mb-8 drop-shadow-lg">
-            AÇAÍ
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {acai.map((item) => (
-              <Card key={item.id} className="bg-black/90 text-white border-2 border-yellow-400">
-                <CardContent className="p-4">
-                  <img
-                    src={item.image}
-                    alt={item.name}
-                    className="w-full h-48 object-cover rounded-md mb-4"
-                  />
-                  <h3 className="text-xl font-bold text-yellow-400 mb-2">
-                    {item.name}
-                  </h3>
-                  <p className="text-white mb-3">{item.description}</p>
-                  <p className="text-yellow-400 font-bold text-xl mb-4">
-                    {formatPrice(item.basePrice)}
-                  </p>
-                  <Button className="w-full bg-yellow-500 hover:bg-yellow-600 text-black font-bold">
-                    <Link to="/menu">
-                      VER OPÇÕES E PEDIR
-                    </Link>
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* About Us Section */}
-      <section id="sobre" className="py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-black/90 rounded-lg p-8">
-            <h2 className="text-4xl font-bold text-yellow-400 mb-6 text-center">
-              Sobre a Talola
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div>
-                <img
-                  src="https://images.unsplash.com/photo-1513104890138-7c749659a591?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=640&q=80"
-                  alt="Nossa História"
-                  className="w-full h-auto rounded-md shadow-md"
-                />
-              </div>
-              <div>
-                <p className="text-white leading-7 mb-4">
-                  A Talola Pizzas e Burgers é referência em qualidade e sabor na região de Irapiranga 11. 
-                  Oferecemos pizzas artesanais, burgers suculentos e o melhor açaí da cidade!
-                </p>
-                <p className="text-white leading-7 mb-4">
-                  Funcionamos todos os dias das 18:00 às 00:00, sempre prontos para atender você 
-                  com o melhor da nossa culinária.
-                </p>
-                <p className="text-yellow-400 font-bold">
-                  Localizado em Irapiranga 11, Loja - Rocha Miranda
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Contact Section */}
-      <section id="contato" className="py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-black/90 rounded-lg p-8">
-            <h2 className="text-4xl font-bold text-yellow-400 mb-6 text-center">
-              Entre em Contato
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div>
-                <h3 className="text-2xl font-bold text-yellow-400 mb-4">
-                  Informações de Contato
-                </h3>
-                <p className="text-white mb-4 text-lg">
-                  <strong className="text-yellow-400">Endereço:</strong> Irapiranga 11 Loja - Rocha Miranda
-                </p>
-                <p className="text-white mb-4 text-lg">
-                  <strong className="text-yellow-400">WhatsApp:</strong> (21) 97540-6476
-                </p>
-                <p className="text-white mb-4 text-lg">
-                  <strong className="text-yellow-400">Horário:</strong> Todos os dias das 18:00 às 00:00
-                </p>
-                <div className="bg-yellow-400 text-black p-4 rounded-lg mt-6">
-                  <p className="font-bold text-lg">DELIVERY</p>
-                  <p className="text-2xl font-bold">(21) 97540-6476</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+            <div className="text-white">
+              <h2 className="text-3xl font-bold mb-6">CONTATO</h2>
+              <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <Phone className="h-6 w-6 text-red-400" />
+                  <span className="text-xl">(21) 97540-6476</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <MapPin className="h-6 w-6 text-red-400" />
+                  <span>Irapiranga 11 Loja - Rocha Miranda</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Clock className="h-6 w-6 text-red-400" />
+                  <span>Todos os dias das 18:00 às 00:00</span>
                 </div>
               </div>
-              <div>
-                <h3 className="text-2xl font-bold text-yellow-400 mb-4">
-                  Envie uma Mensagem
-                </h3>
-                <form className="space-y-4">
-                  <div>
-                    <Input
-                      type="text"
-                      placeholder="Seu Nome"
-                      className="w-full px-4 py-3 border-2 border-yellow-400 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500 bg-white text-black"
-                    />
-                  </div>
-                  <div>
-                    <Input
-                      type="tel"
-                      placeholder="Seu Telefone"
-                      className="w-full px-4 py-3 border-2 border-yellow-400 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500 bg-white text-black"
-                    />
-                  </div>
-                  <div>
-                    <Input
-                      placeholder="Sua Mensagem"
-                      className="w-full px-4 py-3 border-2 border-yellow-400 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500 bg-white text-black"
-                    />
-                  </div>
-                  <Button className="w-full bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-3">
-                    Enviar Mensagem
-                  </Button>
-                </form>
-              </div>
+            </div>
+            
+            <div className="text-white">
+              <h2 className="text-3xl font-bold mb-6">SOBRE NÓS</h2>
+              <p className="text-orange-100 leading-relaxed">
+                A Talola Pizza é uma pizzaria artesanal que se dedica a oferecer 
+                as melhores pizzas da região. Com ingredientes frescos e receitas 
+                exclusivas, garantimos uma experiência única para nossos clientes.
+              </p>
             </div>
           </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="bg-black/95 py-6 text-center">
-        <p className="text-yellow-400 font-bold">
-          &copy; 2023 Talola Pizzas e Burgers. Todos os direitos reservados.
-        </p>
-        <p className="text-white mt-2">
-          Irapiranga 11 Loja - Rocha Miranda | WhatsApp: (21) 97540-6476
-        </p>
+      <footer className="bg-black py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-white">
+          <div className="flex items-center justify-center gap-2 mb-4">
+            <div className="bg-red-600 text-white rounded-full w-10 h-10 flex items-center justify-center text-xl font-bold">
+              T
+            </div>
+            <span className="text-2xl font-bold">TALOLA PIZZA</span>
+          </div>
+          <p className="text-orange-300">
+            &copy; 2024 Talola Pizza. Todos os direitos reservados.
+          </p>
+        </div>
       </footer>
-
-      {/* Mobile Cart Sheet */}
-      <Sheet open={isCartOpen} onOpenChange={setIsCartOpen}>
-        <SheetTrigger asChild>
-          <Button variant="outline" className="md:hidden fixed bottom-4 right-4 z-50 bg-yellow-500 text-black border-yellow-400">
-            <MenuIcon className="mr-2 h-4 w-4" />
-            Carrinho
-          </Button>
-        </SheetTrigger>
-        <SheetContent className="sm:max-w-sm">
-          <SheetHeader>
-            <SheetTitle>Seu Carrinho</SheetTitle>
-            <SheetDescription>
-              Confira os itens no seu carrinho antes de finalizar o pedido.
-            </SheetDescription>
-          </SheetHeader>
-          <OrderCart
-            items={cartItems}
-            onUpdateQuantity={updateQuantity}
-            onRemoveItem={removeItem}
-            onCheckout={handleCheckout}
-          />
-        </SheetContent>
-      </Sheet>
     </div>
   );
 };

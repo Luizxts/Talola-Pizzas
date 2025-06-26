@@ -2746,6 +2746,10 @@ export type Database = {
         Args: { player_level: number; withdrawal_amount: number }
         Returns: number
       }
+      is_store_open: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never

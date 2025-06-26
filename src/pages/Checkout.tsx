@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -8,10 +9,8 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, CreditCard, Smartphone, Banknote } from 'lucide-react';
+import { ArrowLeft, CreditCard, Smartphone, Banknote, Clock } from 'lucide-react';
 import { toast } from 'sonner';
-import { Link } from 'react-router-dom';
-import Logo from '@/components/Logo';
 
 interface CartItem {
   id: string;
@@ -20,13 +19,13 @@ interface CartItem {
   quantity: number;
   totalPrice: number;
   selectedOptions?: Record<string, any>;
-  isSpecialOffer?: boolean;
 }
 
 const Checkout = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const cartItems: CartItem[] = location.state?.cartItems || JSON.parse(localStorage.getItem('cart') || '[]');
+  const [isStoreOpen, setIsStoreOpen] = useState(false);
   const total = cartItems.reduce((sum, item) => sum + item.totalPrice, 0);
   const deliveryFee = 5.00;
   const finalTotal = total + deliveryFee;
@@ -40,17 +39,35 @@ const Checkout = () => {
   });
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    checkStoreHours();
+    const interval = setInterval(checkStoreHours, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const checkStoreHours = () => {
+    const hour = new Date().getHours();
+    const isOpen = hour >= 18 || hour < 1;
+    setIsStoreOpen(isOpen);
+    
+    if (!isOpen) {
+      toast.error('Loja fechada! Funcionamos das 18:00 às 00:00');
+      navigate('/');
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!isStoreOpen) {
+      toast.error('Loja fechada! Não é possível fazer pedidos.');
+      return;
+    }
+    
     setLoading(true);
 
     try {
-      // Generate QR Code data for PIX with correct recipient info
-      const qrCodeData = customerData.paymentMethod === 'pix' 
-        ? generatePixQRCode(finalTotal, customerData.name)
-        : null;
-
-      // Create customer first
+      // Criar cliente
       const { data: customerResult, error: customerError } = await supabase
         .from('customers')
         .insert({
@@ -62,7 +79,7 @@ const Checkout = () => {
 
       if (customerError) throw customerError;
 
-      // Create delivery address
+      // Criar endereço de entrega
       const addressParts = customerData.address.split(',').map(part => part.trim());
       const { data: addressResult, error: addressError } = await supabase
         .from('delivery_addresses')
@@ -80,7 +97,7 @@ const Checkout = () => {
 
       if (addressError) throw addressError;
 
-      // Create order
+      // Criar pedido
       const { data: orderResult, error: orderError } = await supabase
         .from('orders')
         .insert({
@@ -92,20 +109,21 @@ const Checkout = () => {
           payment_method: customerData.paymentMethod,
           payment_status: customerData.paymentMethod === 'pix' ? 'pending' : 'paid',
           status: 'pending',
-          notes: `Items: ${cartItems.map(item => `${item.quantity}x ${item.name}`).join(', ')}`
+          notes: `Items: ${cartItems.map(item => `${item.quantity}x ${item.name}`).join(', ')}`,
+          estimated_delivery_time: new Date(Date.now() + 45 * 60000) // 45 minutos
         })
         .select()
         .single();
 
       if (orderError) throw orderError;
 
-      // Create order items
+      // Criar itens do pedido
       for (const item of cartItems) {
         const { error: itemError } = await supabase
           .from('order_items')
           .insert({
             order_id: orderResult.id,
-            product_id: item.isSpecialOffer ? null : item.id, // Special offers don't have product_id
+            product_id: item.id.split('-')[0], // Remove sufixo de opção
             quantity: item.quantity,
             unit_price: item.basePrice,
             total_price: item.totalPrice,
@@ -115,67 +133,47 @@ const Checkout = () => {
         if (itemError) throw itemError;
       }
 
-      // Clear cart after successful order
+      // Limpar carrinho
       localStorage.removeItem('cart');
 
       toast.success('Pedido realizado com sucesso!');
       
-      if (customerData.paymentMethod === 'pix') {
-        navigate('/payment-confirmation', { 
-          state: { 
-            order: { 
-              ...orderResult, 
-              customer_name: customerData.name,
-              customer_phone: customerData.phone,
-              customer_address: customerData.address,
-              items: cartItems,
-              total_amount: finalTotal,
-              qr_code_data: qrCodeData
-            }
-          } 
-        });
-      } else {
-        navigate('/order-success', { 
-          state: { 
-            order: {
-              ...orderResult,
-              customer_name: customerData.name,
-              customer_phone: customerData.phone,
-              customer_address: customerData.address,
-              items: cartItems,
-              total_amount: finalTotal
-            }
-          } 
-        });
-      }
-    } catch (error) {
+      navigate('/order-tracking', { 
+        state: { 
+          order: {
+            ...orderResult,
+            customer_name: customerData.name,
+            customer_phone: customerData.phone,
+            customer_address: customerData.address,
+            items: cartItems,
+            total_amount: finalTotal
+          }
+        } 
+      });
+    } catch (error: any) {
       console.error('Erro ao criar pedido:', error);
-      toast.error('Erro ao realizar pedido. Tente novamente.');
+      if (error.message?.includes('Loja fechada')) {
+        toast.error('Loja fechada! Funcionamos das 18:00 às 00:00');
+        navigate('/');
+      } else {
+        toast.error('Erro ao realizar pedido. Tente novamente.');
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  const generatePixQRCode = (amount: number, customerName: string) => {
-    // PIX QR Code generation with correct recipient data
-    const pixData = {
-      amount: amount.toFixed(2),
-      description: `Pedido TALOLA - ${customerName}`,
-      merchantName: 'Rayane Cabral',
-      merchantPhone: '21975406476',
-      merchantCity: 'Rio de Janeiro',
-      txId: `TALOLA${Date.now()}`
-    };
-    return JSON.stringify(pixData);
+  const formatPrice = (price: number) => {
+    return `R$ ${price.toFixed(2).replace('.', ',')}`;
   };
 
   if (cartItems.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Card className="max-w-md mx-auto">
+      <div className="min-h-screen bg-gradient-to-br from-orange-500 via-red-600 to-pink-700 flex items-center justify-center">
+        <Card className="max-w-md mx-auto bg-black/60 backdrop-blur-sm border-white/20">
           <CardContent className="p-6 text-center">
-            <p className="text-gray-600 mb-4">Seu carrinho está vazio</p>
-            <Button onClick={() => navigate('/menu')}>
+            <p className="text-white mb-4">Seu carrinho está vazio</p>
+            <Button onClick={() => navigate('/menu')} className="bg-red-600 hover:bg-red-700">
               Voltar ao Cardápio
             </Button>
           </CardContent>
@@ -185,23 +183,30 @@ const Checkout = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-orange-500 via-red-600 to-pink-700">
       {/* Header */}
-      <header className="bg-white shadow-sm">
+      <header className="bg-black/90 backdrop-blur-sm shadow-xl">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex justify-between items-center">
-            <Link to="/">
-              <Logo />
-            </Link>
             <div className="flex items-center space-x-4">
               <Button
                 variant="ghost"
                 onClick={() => navigate('/menu')}
-                className="flex items-center space-x-2"
+                className="text-white hover:text-orange-300"
               >
-                <ArrowLeft className="h-4 w-4" />
-                <span>Voltar ao Menu</span>
+                <ArrowLeft className="h-5 w-5 mr-2" />
+                Voltar ao Menu
               </Button>
+              <div className="bg-red-600 text-white rounded-full w-12 h-12 flex items-center justify-center text-2xl font-bold">
+                T
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-white">FINALIZAR PEDIDO</h1>
+                <div className="flex items-center gap-1 text-green-400 text-sm">
+                  <Clock className="h-4 w-4" />
+                  <span>Aberto até 00:00</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -209,64 +214,60 @@ const Checkout = () => {
 
       <div className="container mx-auto px-4 py-8">
         <div className="grid lg:grid-cols-2 gap-8">
-          {/* Order Summary */}
-          <Card>
+          {/* Resumo do Pedido */}
+          <Card className="bg-black/60 backdrop-blur-sm border-white/20">
             <CardHeader>
-              <CardTitle>Resumo do Pedido</CardTitle>
+              <CardTitle className="text-white">Resumo do Pedido</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 {cartItems.map((item, index) => (
-                  <div key={`${item.id}-${index}`} className="flex justify-between items-center">
+                  <div key={index} className="flex justify-between items-center bg-white/10 rounded-lg p-4">
                     <div>
-                      <p className="font-medium">{item.name}</p>
-                      <p className="text-sm text-gray-600">{item.quantity}x</p>
-                      {item.isSpecialOffer && (
-                        <Badge className="bg-green-100 text-green-800 text-xs">
-                          Oferta Especial
-                        </Badge>
-                      )}
+                      <p className="font-medium text-white">{item.name}</p>
+                      <p className="text-sm text-orange-200">{item.quantity}x</p>
                     </div>
-                    <p className="font-medium">R$ {item.totalPrice.toFixed(2).replace('.', ',')}</p>
+                    <p className="font-medium text-green-400">{formatPrice(item.totalPrice)}</p>
                   </div>
                 ))}
-                <div className="border-t pt-4">
-                  <div className="flex justify-between">
+                <div className="border-t border-white/20 pt-4 space-y-2">
+                  <div className="flex justify-between text-white">
                     <span>Subtotal:</span>
-                    <span>R$ {total.toFixed(2).replace('.', ',')}</span>
+                    <span>{formatPrice(total)}</span>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex justify-between text-white">
                     <span>Taxa de entrega:</span>
-                    <span>R$ {deliveryFee.toFixed(2).replace('.', ',')}</span>
+                    <span>{formatPrice(deliveryFee)}</span>
                   </div>
-                  <div className="flex justify-between font-bold text-lg pt-2 border-t">
+                  <div className="flex justify-between font-bold text-lg pt-2 border-t border-white/20 text-green-400">
                     <span>Total:</span>
-                    <span>R$ {finalTotal.toFixed(2).replace('.', ',')}</span>
+                    <span>{formatPrice(finalTotal)}</span>
                   </div>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Customer Information */}
-          <Card>
+          {/* Dados do Cliente */}
+          <Card className="bg-black/60 backdrop-blur-sm border-white/20">
             <CardHeader>
-              <CardTitle>Dados do Cliente</CardTitle>
+              <CardTitle className="text-white">Dados do Cliente</CardTitle>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <Label htmlFor="name">Nome Completo</Label>
+                  <Label htmlFor="name" className="text-white">Nome Completo</Label>
                   <Input
                     id="name"
                     required
                     value={customerData.name}
                     onChange={(e) => setCustomerData({...customerData, name: e.target.value})}
+                    className="bg-white/10 border-white/20 text-white placeholder:text-gray-400"
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="phone">WhatsApp</Label>
+                  <Label htmlFor="phone" className="text-white">WhatsApp</Label>
                   <Input
                     id="phone"
                     type="tel"
@@ -274,32 +275,35 @@ const Checkout = () => {
                     placeholder="(21) 99999-9999"
                     value={customerData.phone}
                     onChange={(e) => setCustomerData({...customerData, phone: e.target.value})}
+                    className="bg-white/10 border-white/20 text-white placeholder:text-gray-400"
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="address">Endereço Completo</Label>
+                  <Label htmlFor="address" className="text-white">Endereço Completo</Label>
                   <Textarea
                     id="address"
                     required
                     placeholder="Rua, número, bairro, cidade"
                     value={customerData.address}
                     onChange={(e) => setCustomerData({...customerData, address: e.target.value})}
+                    className="bg-white/10 border-white/20 text-white placeholder:text-gray-400"
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="complement">Complemento (opcional)</Label>
+                  <Label htmlFor="complement" className="text-white">Complemento (opcional)</Label>
                   <Input
                     id="complement"
                     placeholder="Apartamento, bloco, referência"
                     value={customerData.complement}
                     onChange={(e) => setCustomerData({...customerData, complement: e.target.value})}
+                    className="bg-white/10 border-white/20 text-white placeholder:text-gray-400"
                   />
                 </div>
 
                 <div>
-                  <Label>Forma de Pagamento</Label>
+                  <Label className="text-white">Forma de Pagamento</Label>
                   <RadioGroup
                     value={customerData.paymentMethod}
                     onValueChange={(value) => setCustomerData({...customerData, paymentMethod: value})}
@@ -307,21 +311,21 @@ const Checkout = () => {
                   >
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="pix" id="pix" />
-                      <Label htmlFor="pix" className="flex items-center gap-2">
+                      <Label htmlFor="pix" className="flex items-center gap-2 text-white">
                         <Smartphone className="h-4 w-4" />
-                        PIX - Rayane Cabral
+                        PIX - (21) 97540-6476
                       </Label>
                     </div>
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="card" id="card" />
-                      <Label htmlFor="card" className="flex items-center gap-2">
+                      <Label htmlFor="card" className="flex items-center gap-2 text-white">
                         <CreditCard className="h-4 w-4" />
                         Cartão (na entrega)
                       </Label>
                     </div>
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="money" id="money" />
-                      <Label htmlFor="money" className="flex items-center gap-2">
+                      <Label htmlFor="money" className="flex items-center gap-2 text-white">
                         <Banknote className="h-4 w-4" />
                         Dinheiro (na entrega)
                       </Label>
@@ -329,7 +333,11 @@ const Checkout = () => {
                   </RadioGroup>
                 </div>
 
-                <Button type="submit" className="w-full bg-red-600 hover:bg-red-700" disabled={loading}>
+                <Button 
+                  type="submit" 
+                  className="w-full bg-green-600 hover:bg-green-700 text-white text-lg py-3" 
+                  disabled={loading || !isStoreOpen}
+                >
                   {loading ? 'Processando...' : 'Finalizar Pedido'}
                 </Button>
               </form>
