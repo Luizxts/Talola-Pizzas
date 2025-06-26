@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import MenuCard from '@/components/MenuCard';
@@ -9,6 +8,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArrowLeft, Utensils } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { Link } from 'react-router-dom';
+import { Badge } from '@/components/ui/badge';
+import Logo from '@/components/Logo';
 
 interface Product {
   id: string;
@@ -193,33 +195,16 @@ const Menu = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b sticky top-0 z-40">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Button
-                variant="ghost"
-                onClick={() => navigate('/')}
-                className="flex items-center gap-2"
-              >
-                <ArrowLeft className="h-4 w-4" />
-                Voltar
-              </Button>
-              <div>
-                <h1 className="text-2xl font-bold text-red-600">TALOLA</h1>
-                <p className="text-sm text-gray-600">Cardápio</p>
-              </div>
-            </div>
-            <div className="text-right">
-              <p className="text-sm text-gray-600">Delivery disponível</p>
-              <Button
-                onClick={() => window.open('https://wa.me/5521975406476', '_blank')}
-                variant="outline"
-                size="sm"
-                className="mt-1"
-              >
-                <span className="font-semibold text-green-600">WhatsApp</span>
-              </Button>
+      <header className="bg-white shadow-sm sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex justify-between items-center">
+            <Link to="/">
+              <Logo />
+            </Link>
+            <div className="flex items-center space-x-4">
+              <Badge variant="outline" className="text-green-600 border-green-600">
+                {cartItems.length} {cartItems.length === 1 ? 'item' : 'itens'} no carrinho
+              </Badge>
             </div>
           </div>
         </div>
