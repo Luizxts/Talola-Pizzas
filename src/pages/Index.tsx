@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ShoppingCart } from 'lucide-react';
@@ -272,6 +273,62 @@ const Index = () => {
         </div>
       </section>
 
+      {/* Ofertas Especiais */}
+      <section className="py-12 bg-red-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="text-3xl font-semibold text-gray-800 mb-6">
+            Ofertas Especiais
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {pizzas.filter(pizza => pizza.isSpecialOffer).map((pizza) => (
+              <Card key={pizza.id} className="border-2 border-red-200">
+                <CardContent className="p-4">
+                  <div className="relative">
+                    <img
+                      src={pizza.image}
+                      alt={pizza.name}
+                      className="w-full h-48 object-cover rounded-md mb-4"
+                    />
+                    <Badge className="absolute top-2 right-2 bg-red-500 text-white">
+                      Oferta Especial
+                    </Badge>
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                    {pizza.name}
+                  </h3>
+                  <p className="text-gray-600 mb-3">{pizza.description}</p>
+                  <p className="text-green-600 font-bold text-lg">
+                    {formatPrice(pizza.basePrice)}
+                  </p>
+                  <Button 
+                    className="w-full mt-4 bg-red-600 hover:bg-red-700 text-white"
+                    onClick={() => {
+                      const defaultOptions = {
+                        'Borda': pizza.options.find(opt => opt.name === 'Borda')?.choices.find(choice => choice.price === 0)?.id || 'sem-borda',
+                        'Tamanho': pizza.options.find(opt => opt.name === 'Tamanho')?.choices.find(choice => choice.price === 0)?.id || 'tamanho-media',
+                        'Adicionais': pizza.options.find(opt => opt.name === 'Adicionais')?.choices.find(choice => choice.price === 0)?.id || 'sem-adicional'
+                      };
+                      
+                      const itemToAdd = {
+                        id: pizza.id,
+                        name: pizza.name,
+                        basePrice: pizza.basePrice,
+                        selectedOptions: defaultOptions,
+                        isSpecialOffer: true
+                      };
+                      
+                      addToCart(itemToAdd);
+                    }}
+                  >
+                    Adicionar ao Carrinho
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Featured Pizzas */}
       <section className="py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -295,12 +352,7 @@ const Index = () => {
                     {formatPrice(pizza.basePrice)}
                   </p>
                   <Button className="w-full mt-4 bg-green-600 hover:bg-green-700 text-white">
-                    <Link
-                      to={{
-                        pathname: '/menu',
-                        state: { selectedPizzaId: pizza.id },
-                      }}
-                    >
+                    <Link to="/menu">
                       Ver opções e pedir
                     </Link>
                   </Button>
