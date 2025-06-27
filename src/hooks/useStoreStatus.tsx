@@ -4,9 +4,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 export interface StoreStatus {
+  id: string;
   is_open: boolean;
   last_updated: string;
   updated_by: string;
+  created_at: string;
 }
 
 export const useStoreStatus = () => {
@@ -25,7 +27,7 @@ export const useStoreStatus = () => {
       }
 
       if (data) {
-        setStoreStatus(data);
+        setStoreStatus(data as StoreStatus);
       } else {
         // Se não existe configuração, criar uma padrão (aberta)
         const defaultStatus = {
@@ -41,7 +43,7 @@ export const useStoreStatus = () => {
           .single();
 
         if (insertError) throw insertError;
-        setStoreStatus(newData);
+        setStoreStatus(newData as StoreStatus);
       }
     } catch (error) {
       console.error('Erro ao buscar status da loja:', error);
@@ -69,7 +71,7 @@ export const useStoreStatus = () => {
 
       if (error) throw error;
 
-      setStoreStatus(data);
+      setStoreStatus(data as StoreStatus);
       toast.success(`Loja ${newStatus ? 'aberta' : 'fechada'} com sucesso!`);
     } catch (error) {
       console.error('Erro ao alterar status da loja:', error);

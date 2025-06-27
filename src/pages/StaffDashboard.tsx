@@ -153,12 +153,26 @@ const StaffDashboard = () => {
         .select('*')
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao buscar estatísticas:', error);
+        // Use default stats if view doesn't return data
+        return;
+      }
 
-      setStats(data);
+      if (data) {
+        setStats({
+          pending: data.pending || 0,
+          preparing: data.preparing || 0,
+          ready: data.ready || 0,
+          delivering: data.delivering || 0,
+          completed: data.completed || 0,
+          todayRevenue: data.todayrevenue || 0,
+          monthRevenue: data.monthrevenue || 0,
+          yearRevenue: data.yearrevenue || 0
+        });
+      }
     } catch (error: any) {
       console.error('Erro ao buscar estatísticas:', error);
-      toast.error('Erro ao buscar estatísticas');
     }
   };
 

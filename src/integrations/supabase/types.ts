@@ -2016,6 +2016,30 @@ export type Database = {
         }
         Relationships: []
       }
+      store_settings: {
+        Row: {
+          created_at: string
+          id: string
+          is_open: boolean
+          last_updated: string
+          updated_by: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_open?: boolean
+          last_updated?: string
+          updated_by?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_open?: boolean
+          last_updated?: string
+          updated_by?: string
+        }
+        Relationships: []
+      }
       system_logs: {
         Row: {
           action: string
@@ -2726,7 +2750,19 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      dashboard_stats: {
+        Row: {
+          completed: number | null
+          delivering: number | null
+          monthrevenue: number | null
+          pending: number | null
+          preparing: number | null
+          ready: number | null
+          todayrevenue: number | null
+          yearrevenue: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       calculate_real_time_metrics: {
