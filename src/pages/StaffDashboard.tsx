@@ -17,7 +17,8 @@ import {
   Calendar,
   TrendingUp,
   Users,
-  Store
+  Store,
+  Star
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useStoreStatus } from '@/hooks/useStoreStatus';
@@ -42,6 +43,8 @@ interface DashboardStats {
   todayRevenue: number;
   monthRevenue: number;
   yearRevenue: number;
+  avgRating: number;
+  totalReviews: number;
 }
 
 const StaffDashboard = () => {
@@ -56,22 +59,25 @@ const StaffDashboard = () => {
     completed: 0,
     todayRevenue: 0,
     monthRevenue: 0,
-    yearRevenue: 0
+    yearRevenue: 0,
+    avgRating: 0,
+    totalReviews: 0
   });
   const [loading, setLoading] = useState(true);
   const [selectedPeriod, setSelectedPeriod] = useState('today');
+  const [statusFilter, setStatusFilter] = useState('all');
 
   useEffect(() => {
     const isLoggedIn = localStorage.getItem('staff_logged_in');
     if (!isLoggedIn) {
       navigate('/staff-login');
     } else {
-      fetchOrders(selectedPeriod);
+      fetchOrders(selectedPeriod, statusFilter);
       fetchStats();
     }
-  }, [navigate, selectedPeriod]);
+  }, [navigate, selectedPeriod, statusFilter]);
 
-  const fetchOrders = async (period: string) => {
+  const fetchOrders = async (period: string, status: string) => {
     setLoading(true);
     try {
       let startDate = new Date();
@@ -89,6 +95,11 @@ const StaffDashboard = () => {
       } else if (period === 'month') {
         startDate = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
         endDate = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0);
+        startDate.setHours(0, 0, 0, 0);
+        endDate.setHours(23, 59, 59, 999);
+      } else if (period === 'year') {
+        startDate = new Date(startDate.getFullYear(), 0, 1);
+        endDate = new Date(startDate.getFullYear() + 1, 0, 1);
         startDate.setHours(0, 0, 0, 0);
         endDate.setHours(23, 59, 59, 999);
       }
@@ -119,7 +130,8 @@ const StaffDashboard = () => {
           )
         `)
         .gte('created_at', startDate.toISOString())
-        .lte('created_at', endDate.toISOString());
+        .lte('created_at', endDate.toISOString())
+        .eq('status', status);
 
       if (error) throw error;
 
@@ -155,7 +167,6 @@ const StaffDashboard = () => {
 
       if (error) {
         console.error('Erro ao buscar estatísticas:', error);
-        // Use default stats if view doesn't return data
         return;
       }
 
@@ -168,7 +179,9 @@ const StaffDashboard = () => {
           completed: data.completed || 0,
           todayRevenue: data.todayrevenue || 0,
           monthRevenue: data.monthrevenue || 0,
-          yearRevenue: data.yearrevenue || 0
+          yearRevenue: data.yearrevenue || 0,
+          avgRating: data.avgrating || 0,
+          totalReviews: data.totalreviews || 0
         });
       }
     } catch (error: any) {
@@ -208,6 +221,37 @@ const StaffDashboard = () => {
     localStorage.removeItem('staff_logged_in');
     navigate('/staff-login');
   };
+
+  const handleConfirmPayment = async (orderId: string) => {
+    try {
+      const { error } = await supabase
+        .from('orders')
+        .update({ 
+          payment_status: 'paid',
+          status: 'preparing',
+          confirmed_at: new Date().toISOString()
+        })
+        .eq('id', orderId);
+
+      if (error) throw error;
+
+      setOrders(orders.map(order =>
+        order.id === orderId 
+          ? { ...order, payment_status: 'paid', status: 'preparing' } 
+          : order
+      ));
+      toast.success('Pagamento confirmado! Pedido em preparo.');
+      fetchStats();
+    } catch (error: any) {
+      console.error('Erro ao confirmar pagamento:', error);
+      toast.error('Erro ao confirmar pagamento');
+    }
+  };
+
+  const filteredOrders = orders.filter(order => {
+    if (statusFilter === 'all') return true;
+    return order.status === statusFilter;
+  });
 
   if (loading) {
     return (
@@ -268,7 +312,7 @@ const StaffDashboard = () => {
 
       <div className="container mx-auto px-4 py-8">
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4 mb-8">
           <Card className="bg-blue-600/20 backdrop-blur-sm border-blue-400/30">
             <CardContent className="p-4 text-center">
               <Package className="h-8 w-8 text-blue-400 mx-auto mb-2" />
@@ -324,6 +368,14 @@ const StaffDashboard = () => {
               <p className="text-emerald-200 text-sm">Mês</p>
             </CardContent>
           </Card>
+
+          <Card className="bg-yellow-500/20 backdrop-blur-sm border-yellow-300/30">
+            <CardContent className="p-4 text-center">
+              <Star className="h-8 w-8 text-yellow-300 mx-auto mb-2" />
+              <p className="text-2xl font-bold text-white">{stats.avgRating.toFixed(1)}</p>
+              <p className="text-yellow-200 text-sm">Avaliação</p>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Orders Section */}
@@ -346,12 +398,30 @@ const StaffDashboard = () => {
                       <SelectItem value="today">Hoje</SelectItem>
                       <SelectItem value="week">Semana</SelectItem>
                       <SelectItem value="month">Mês</SelectItem>
+                      <SelectItem value="year">Ano</SelectItem>
+                      <SelectItem value="all">Todos</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex items-center gap-2 text-white">
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger className="w-32 bg-white/10 border-white/20 text-white">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos</SelectItem>
+                      <SelectItem value="pending">Pendentes</SelectItem>
+                      <SelectItem value="preparing">Preparando</SelectItem>
+                      <SelectItem value="ready">Prontos</SelectItem>
+                      <SelectItem value="delivering">Entregando</SelectItem>
+                      <SelectItem value="completed">Entregues</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 
                 <Badge className="bg-white/20 text-white">
-                  {orders.length} pedidos
+                  {filteredOrders.length} pedidos
                 </Badge>
               </div>
             </div>
@@ -367,14 +437,15 @@ const StaffDashboard = () => {
                     <th className="py-2">Endereço</th>
                     <th className="py-2">Itens</th>
                     <th className="py-2">Total</th>
+                    <th className="py-2">Pagamento</th>
                     <th className="py-2">Status</th>
                     <th className="py-2">Ações</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {orders.map(order => (
+                  {filteredOrders.map(order => (
                     <tr key={order.id} className="border-b border-white/20">
-                      <td className="py-3">{order.id}</td>
+                      <td className="py-3">{order.id.slice(-8)}</td>
                       <td className="py-3">{new Date(order.created_at).toLocaleDateString()}</td>
                       <td className="py-3">{order.customer_name}</td>
                       <td className="py-3">{order.customer_address}</td>
@@ -386,6 +457,15 @@ const StaffDashboard = () => {
                         ))}
                       </td>
                       <td className="py-3">{formatPrice(order.total_amount)}</td>
+                      <td className="py-3">
+                        <Badge className={
+                          order.payment_status === 'paid' 
+                            ? 'bg-green-600 text-white' 
+                            : 'bg-yellow-600 text-white'
+                        }>
+                          {order.payment_status === 'paid' ? 'Pago' : 'Pendente'}
+                        </Badge>
+                      </td>
                       <td className="py-3">
                         <Select value={order.status} onValueChange={(value) => updateOrderStatus(order.id, value)}>
                           <SelectTrigger className="w-40 bg-white/10 border-white/20 text-white">
@@ -402,7 +482,15 @@ const StaffDashboard = () => {
                         </Select>
                       </td>
                       <td className="py-3">
-                        {/* Add any actions here if needed */}
+                        {order.payment_status === 'pending' && (
+                          <Button
+                            onClick={() => handleConfirmPayment(order.id)}
+                            size="sm"
+                            className="bg-green-600 hover:bg-green-700"
+                          >
+                            Confirmar Pagamento
+                          </Button>
+                        )}
                       </td>
                     </tr>
                   ))}

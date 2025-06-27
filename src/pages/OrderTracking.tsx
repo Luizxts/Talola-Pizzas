@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle2, Clock, Truck, ChefHat, MessageCircle, Home } from 'lucide-react';
+import OrderReview from '@/components/OrderReview';
 
 interface Order {
   id: string;
@@ -16,7 +17,16 @@ interface Order {
   customer_name: string;
   customer_phone: string;
   customer_address: string;
+  customer_id: string;
   estimated_delivery_time?: string;
+  created_at: string;
+  delivered_at?: string;
+}
+
+interface OrderReview {
+  id: string;
+  rating: number;
+  comment: string;
   created_at: string;
 }
 
@@ -24,12 +34,16 @@ const OrderTracking = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [order, setOrder] = useState<Order | null>(location.state?.order || null);
+  const [existingReview, setExistingReview] = useState<OrderReview | null>(null);
+  const [showReviewForm, setShowReviewForm] = useState(false);
 
   useEffect(() => {
     if (!order) {
       navigate('/');
       return;
     }
+
+    fetchExistingReview();
 
     // Atualizar status do pedido em tempo real
     const channel = supabase
@@ -43,7 +57,13 @@ const OrderTracking = () => {
           filter: `id=eq.${order.id}`
         },
         (payload) => {
-          setOrder(prev => prev ? { ...prev, ...payload.new } : null);
+          const updatedOrder = { ...order, ...payload.new } as Order;
+          setOrder(updatedOrder);
+          
+          // Se o pedido foi entregue, mostrar opção de avaliação
+          if (payload.new.status === 'completed' && !existingReview) {
+            setShowReviewForm(true);
+          }
         }
       )
       .subscribe();
@@ -51,7 +71,62 @@ const OrderTracking = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [order, navigate]);
+  }, [order, navigate, existingReview]);
+
+  const fetchExistingReview = async () => {
+    if (!order) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('order_reviews')
+        .select('*')
+        .eq('order_id', order.id)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        console.error('Erro ao buscar avaliação:', error);
+        return;
+      }
+
+      if (data) {
+        setExistingReview(data);
+      }
+    } catch (error) {
+      console.error('Erro ao buscar avaliação:', error);
+    }
+  };
+
+  const handleConfirmDelivery = async () => {
+    if (!order) return;
+
+    try {
+      const { error } = await supabase
+        .from('orders')
+        .update({ 
+          status: 'completed',
+          delivered_at: new Date().toISOString()
+        })
+        .eq('id', order.id);
+
+      if (error) throw error;
+
+      setOrder({ ...order, status: 'completed', delivered_at: new Date().toISOString() });
+      
+      if (!existingReview) {
+        setShowReviewForm(true);
+      }
+      
+      toast.success('Entrega confirmada!');
+    } catch (error: any) {
+      console.error('Erro ao confirmar entrega:', error);
+      toast.error('Erro ao confirmar entrega');
+    }
+  };
+
+  const handleReviewSubmitted = () => {
+    setShowReviewForm(false);
+    fetchExistingReview();
+  };
 
   if (!order) {
     return (
@@ -110,7 +185,7 @@ const OrderTracking = () => {
           color: 'text-purple-400',
           bgColor: 'bg-purple-400/20'
         };
-      case 'delivered':
+      case 'completed':
         return {
           icon: CheckCircle2,
           text: 'Entregue',
@@ -145,7 +220,7 @@ const OrderTracking = () => {
     { key: 'preparing', text: 'Preparando', icon: ChefHat },
     { key: 'ready', text: 'Pronto', icon: CheckCircle2 },
     { key: 'delivering', text: 'Entregando', icon: Truck },
-    { key: 'delivered', text: 'Entregue', icon: CheckCircle2 }
+    { key: 'completed', text: 'Entregue', icon: CheckCircle2 }
   ];
 
   const currentStepIndex = steps.findIndex(step => step.key === order.status);
@@ -178,9 +253,9 @@ const OrderTracking = () => {
       </header>
 
       <div className="container mx-auto px-4 py-8">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-4xl mx-auto space-y-8">
           {/* Status Principal */}
-          <Card className="bg-black/60 backdrop-blur-sm border-white/20 mb-8">
+          <Card className="bg-black/60 backdrop-blur-sm border-white/20">
             <CardContent className="p-8 text-center">
               <div className={`${statusInfo.bgColor} rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-6`}>
                 <IconComponent className={`h-12 w-12 ${statusInfo.color}`} />
@@ -190,7 +265,7 @@ const OrderTracking = () => {
               </h2>
               <p className="text-white text-lg mb-6">{statusInfo.description}</p>
               
-              {order.estimated_delivery_time && order.status !== 'delivered' && (
+              {order.estimated_delivery_time && order.status !== 'completed' && (
                 <div className="bg-white/10 rounded-lg p-4 inline-block">
                   <p className="text-orange-200">Previsão de entrega:</p>
                   <p className="text-white font-bold">
@@ -201,11 +276,23 @@ const OrderTracking = () => {
                   </p>
                 </div>
               )}
+
+              {/* Botão confirmar entrega quando status é delivering */}
+              {order.status === 'delivering' && (
+                <div className="mt-6">
+                  <Button
+                    onClick={handleConfirmDelivery}
+                    className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 text-lg"
+                  >
+                    Confirmar Entrega
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
 
           {/* Timeline */}
-          <Card className="bg-black/60 backdrop-blur-sm border-white/20 mb-8">
+          <Card className="bg-black/60 backdrop-blur-sm border-white/20">
             <CardHeader>
               <CardTitle className="text-white">Acompanhamento do Pedido</CardTitle>
             </CardHeader>
@@ -245,6 +332,44 @@ const OrderTracking = () => {
               </div>
             </CardContent>
           </Card>
+
+          {/* Formulário de Avaliação */}
+          {showReviewForm && !existingReview && order.status === 'completed' && (
+            <OrderReview
+              orderId={order.id}
+              customerId={order.customer_id}
+              onReviewSubmitted={handleReviewSubmitted}
+            />
+          )}
+
+          {/* Avaliação Existente */}
+          {existingReview && (
+            <Card className="bg-black/60 backdrop-blur-sm border-white/20">
+              <CardHeader>
+                <CardTitle className="text-white">Sua Avaliação</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center space-x-2 mb-3">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <Star
+                      key={star}
+                      className={`h-6 w-6 ${
+                        star <= existingReview.rating
+                          ? 'text-yellow-400 fill-yellow-400'
+                          : 'text-gray-400'
+                      }`}
+                    />
+                  ))}
+                </div>
+                {existingReview.comment && (
+                  <p className="text-white">{existingReview.comment}</p>
+                )}
+                <p className="text-gray-400 text-sm mt-2">
+                  Avaliado em {new Date(existingReview.created_at).toLocaleDateString('pt-BR')}
+                </p>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Detalhes do Pedido */}
           <div className="grid md:grid-cols-2 gap-8">
