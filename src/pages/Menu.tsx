@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
@@ -8,6 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
+import { useStoreStatus } from '@/hooks/useStoreStatus';
+import StoreStatusBanner from '@/components/StoreStatusBanner';
 
 interface Product {
   id: string;
@@ -42,6 +43,7 @@ interface CartItem {
 
 const Menu = () => {
   const navigate = useNavigate();
+  const { checkStoreInteraction, isOpen } = useStoreStatus();
   const [isStoreOpen, setIsStoreOpen] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [products, setProducts] = useState<Record<string, Product[]>>({});
@@ -129,6 +131,8 @@ const Menu = () => {
   };
 
   const addToCart = (product: Product, selectedSize?: ProductOption) => {
+    if (!checkStoreInteraction()) return;
+
     const price = product.base_price + (selectedSize?.price_modifier || 0);
     const item: CartItem = {
       id: `${product.id}-${selectedSize?.id || 'default'}`,
@@ -154,6 +158,8 @@ const Menu = () => {
   };
 
   const updateQuantity = (itemIndex: number, newQuantity: number) => {
+    if (!checkStoreInteraction()) return;
+
     if (newQuantity <= 0) {
       removeItem(itemIndex);
       return;
@@ -173,9 +179,16 @@ const Menu = () => {
   };
 
   const removeItem = (itemIndex: number) => {
+    if (!checkStoreInteraction()) return;
+
     const updatedItems = cartItems.filter((_, index) => index !== itemIndex);
     setCartItems(updatedItems);
     toast.success('Item removido do carrinho');
+  };
+
+  const handleCheckout = () => {
+    if (!checkStoreInteraction()) return;
+    navigate('/checkout', { state: { cartItems } });
   };
 
   const getCartTotal = () => {
@@ -203,6 +216,9 @@ const Menu = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-500 via-red-600 to-pink-700">
+      {/* Status Banner */}
+      <StoreStatusBanner />
+
       {/* Header */}
       <header className="bg-black/90 backdrop-blur-sm shadow-xl sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
@@ -221,22 +237,25 @@ const Menu = () => {
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-white">CARDÁPIO</h1>
-                <div className="flex items-center gap-1 text-green-400 text-sm">
+                <div className="flex items-center gap-1 text-sm">
                   <Clock className="h-4 w-4" />
-                  <span>Aberto até 00:00</span>
+                  <span className={isOpen ? 'text-green-400' : 'text-red-400'}>
+                    {isOpen ? 'Aberto até 00:00' : 'Loja Fechada'}
+                  </span>
                 </div>
               </div>
             </div>
             
             <div className="flex items-center space-x-4">
-              <Badge className="bg-red-600 text-white px-4 py-2">
+              <Badge className={`px-4 py-2 ${isOpen ? 'bg-red-600' : 'bg-gray-600'} text-white`}>
                 <ShoppingCart className="h-4 w-4 mr-2" />
                 {cartItems.length} itens - {formatPrice(getCartTotal())}
               </Badge>
               {cartItems.length > 0 && (
                 <Button
-                  onClick={() => navigate('/checkout')}
-                  className="bg-green-600 hover:bg-green-700 text-white"
+                  onClick={handleCheckout}
+                  disabled={!isOpen}
+                  className={`text-white ${isOpen ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-600 cursor-not-allowed'}`}
                 >
                   Finalizar Pedido
                 </Button>
@@ -277,7 +296,7 @@ const Menu = () => {
                     <CardContent>
                       <div className="grid md:grid-cols-2 gap-6">
                         {products[category.id]?.map((product) => (
-                          <Card key={product.id} className="bg-white/10 backdrop-blur-sm border-white/20 hover:bg-white/20 transition-all">
+                          <Card key={product.id} className={`bg-white/10 backdrop-blur-sm border-white/20 hover:bg-white/20 transition-all ${!isOpen ? 'opacity-75' : ''}`}>
                             <CardContent className="p-6">
                               <h3 className="text-xl font-bold text-white mb-2">{product.name}</h3>
                               <p className="text-orange-200 mb-4">{product.description}</p>
@@ -298,7 +317,8 @@ const Menu = () => {
                                     <Button
                                       key={option.id}
                                       onClick={() => addToCart(product, option)}
-                                      className="w-full bg-red-600 hover:bg-red-700 text-white justify-between"
+                                      disabled={!isOpen}
+                                      className={`w-full justify-between ${isOpen ? 'bg-red-600 hover:bg-red-700' : 'bg-gray-600 cursor-not-allowed'} text-white`}
                                     >
                                       <span>{option.name}</span>
                                       <span>{formatPrice(product.base_price + option.price_modifier)}</span>
@@ -308,7 +328,8 @@ const Menu = () => {
                               ) : (
                                 <Button
                                   onClick={() => addToCart(product)}
-                                  className="w-full bg-red-600 hover:bg-red-700 text-white"
+                                  disabled={!isOpen}
+                                  className={`w-full ${isOpen ? 'bg-red-600 hover:bg-red-700' : 'bg-gray-600 cursor-not-allowed'} text-white`}
                                 >
                                   Adicionar ao Carrinho
                                 </Button>
@@ -348,6 +369,7 @@ const Menu = () => {
                             variant="ghost"
                             size="sm"
                             onClick={() => removeItem(index)}
+                            disabled={!isOpen}
                             className="text-red-400 hover:text-red-300 p-1 h-auto"
                           >
                             ×
@@ -360,6 +382,7 @@ const Menu = () => {
                               variant="ghost"
                               size="sm"
                               onClick={() => updateQuantity(index, item.quantity - 1)}
+                              disabled={!isOpen}
                               className="text-white hover:text-orange-300 p-1 h-auto"
                             >
                               <Minus className="h-4 w-4" />
@@ -369,6 +392,7 @@ const Menu = () => {
                               variant="ghost"
                               size="sm"
                               onClick={() => updateQuantity(index, item.quantity + 1)}
+                              disabled={!isOpen}
                               className="text-white hover:text-orange-300 p-1 h-auto"
                             >
                               <Plus className="h-4 w-4" />
@@ -390,8 +414,9 @@ const Menu = () => {
                       </div>
                       
                       <Button
-                        onClick={() => navigate('/checkout', { state: { cartItems } })}
-                        className="w-full bg-green-600 hover:bg-green-700 text-white text-lg py-3"
+                        onClick={handleCheckout}
+                        disabled={!isOpen}
+                        className={`w-full text-lg py-3 ${isOpen ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-600 cursor-not-allowed'} text-white`}
                       >
                         Finalizar Pedido
                       </Button>

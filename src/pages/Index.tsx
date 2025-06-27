@@ -7,6 +7,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
+import { useStoreStatus } from '@/hooks/useStoreStatus';
+import StoreStatusBanner from '@/components/StoreStatusBanner';
 
 interface Product {
   id: string;
@@ -24,30 +26,14 @@ interface Category {
 }
 
 const Index = () => {
-  const [isStoreOpen, setIsStoreOpen] = useState(false);
-  const [currentTime, setCurrentTime] = useState(new Date());
+  const { checkStoreInteraction, isOpen } = useStoreStatus();
   const [categories, setCategories] = useState<Category[]>([]);
   const [products, setProducts] = useState<Record<string, Product[]>>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    checkStoreHours();
     fetchMenuData();
-    
-    const interval = setInterval(() => {
-      setCurrentTime(new Date());
-      checkStoreHours();
-    }, 60000); // Atualiza a cada minuto
-
-    return () => clearInterval(interval);
   }, []);
-
-  const checkStoreHours = () => {
-    const now = new Date();
-    const hour = now.getHours();
-    const isOpen = hour >= 18 || hour < 1; // 18:00 às 00:59
-    setIsStoreOpen(isOpen);
-  };
 
   const fetchMenuData = async () => {
     try {
@@ -89,6 +75,13 @@ const Index = () => {
     return `R$ ${price.toFixed(2).replace('.', ',')}`;
   };
 
+  const handleMenuClick = () => {
+    if (!checkStoreInteraction()) {
+      return;
+    }
+    // Se a loja estiver aberta, navegar normalmente
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-orange-500 via-red-600 to-pink-700 flex items-center justify-center">
@@ -100,41 +93,11 @@ const Index = () => {
     );
   }
 
-  if (!isStoreOpen) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-800 via-gray-900 to-black flex items-center justify-center">
-        <div className="text-center text-white max-w-2xl mx-auto px-4">
-          <div className="bg-red-600 text-white rounded-full w-32 h-32 flex items-center justify-center text-6xl font-bold mx-auto mb-8 shadow-2xl">
-            T
-          </div>
-          <h1 className="text-5xl font-bold mb-4">TALOLA PIZZA</h1>
-          <div className="bg-red-600/20 backdrop-blur-sm rounded-xl p-8 border border-red-600/30">
-            <Clock className="h-16 w-16 text-red-400 mx-auto mb-4" />
-            <h2 className="text-3xl font-bold text-red-400 mb-4">LOJA FECHADA</h2>
-            <p className="text-xl mb-6">Estamos fechados no momento.</p>
-            <div className="bg-red-600 text-white px-6 py-4 rounded-lg inline-block">
-              <p className="text-lg font-bold">HORÁRIO DE FUNCIONAMENTO</p>
-              <p className="text-2xl font-bold">18:00 ÀS 00:00</p>
-              <p className="text-sm">Todos os dias</p>
-            </div>
-            <div className="mt-8 space-y-2">
-              <p className="flex items-center justify-center gap-2">
-                <Phone className="h-5 w-5" />
-                <span>(21) 97540-6476</span>
-              </p>
-              <p className="flex items-center justify-center gap-2">
-                <MapPin className="h-5 w-5" />
-                <span>Irapiranga 11 Loja - Rocha Miranda</span>
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-500 via-red-600 to-pink-700">
+      {/* Status Banner */}
+      <StoreStatusBanner />
+
       {/* Header */}
       <header className="bg-black/90 backdrop-blur-sm shadow-xl sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
@@ -150,17 +113,20 @@ const Index = () => {
             </div>
             
             <div className="flex items-center space-x-6">
-              <div className="text-white text-center hidden md:block">
+              <div className={`text-white text-center hidden md:block ${!isOpen ? 'opacity-50' : ''}`}>
                 <div className="flex items-center gap-2">
-                  <Clock className="h-5 w-5 text-green-400" />
-                  <span className="text-green-400 font-bold">ABERTO</span>
+                  <Clock className="h-5 w-5" />
+                  <span className={`font-bold ${isOpen ? 'text-green-400' : 'text-red-400'}`}>
+                    {isOpen ? 'ABERTO' : 'FECHADO'}
+                  </span>
                 </div>
                 <p className="text-sm">18:00 - 00:00</p>
               </div>
               
               <Link 
                 to="/menu" 
-                className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-bold transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center gap-2"
+                onClick={handleMenuClick}
+                className={`bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-bold transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center gap-2 ${!isOpen ? 'opacity-75 cursor-not-allowed' : ''}`}
               >
                 <ShoppingCart className="h-5 w-5" />
                 VER CARDÁPIO
@@ -208,7 +174,8 @@ const Index = () => {
 
             <Link 
               to="/menu"
-              className="bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white px-12 py-4 rounded-full text-xl font-bold transition-all duration-300 transform hover:scale-105 shadow-xl inline-block"
+              onClick={handleMenuClick}
+              className={`bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white px-12 py-4 rounded-full text-xl font-bold transition-all duration-300 transform hover:scale-105 shadow-xl inline-block ${!isOpen ? 'opacity-75 cursor-not-allowed' : ''}`}
             >
               FAZER PEDIDO AGORA
             </Link>
@@ -225,7 +192,7 @@ const Index = () => {
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {categories.slice(0, 4).map((category) => (
-              <Card key={category.id} className="bg-black/60 backdrop-blur-sm border-white/20 hover:bg-black/70 transition-all duration-300 transform hover:scale-105">
+              <Card key={category.id} className={`bg-black/60 backdrop-blur-sm border-white/20 hover:bg-black/70 transition-all duration-300 transform hover:scale-105 ${!isOpen ? 'opacity-75' : ''}`}>
                 <CardContent className="p-6 text-center">
                   <h3 className="text-2xl font-bold text-white mb-4">{category.name}</h3>
                   <p className="text-orange-200 mb-6">{category.description}</p>
@@ -243,7 +210,7 @@ const Index = () => {
                     ))}
                   </div>
                   
-                  <Link to="/menu">
+                  <Link to="/menu" onClick={handleMenuClick}>
                     <Button className="w-full bg-red-600 hover:bg-red-700 text-white">
                       Ver Todos
                     </Button>

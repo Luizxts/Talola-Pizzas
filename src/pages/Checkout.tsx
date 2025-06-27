@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,6 +10,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, CreditCard, Smartphone, Banknote, Clock } from 'lucide-react';
 import { toast } from 'sonner';
+import { useStoreStatus } from '@/hooks/useStoreStatus';
+import StoreStatusBanner from '@/components/StoreStatusBanner';
 
 interface CartItem {
   id: string;
@@ -24,8 +25,8 @@ interface CartItem {
 const Checkout = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { checkStoreInteraction, isOpen } = useStoreStatus();
   const cartItems: CartItem[] = location.state?.cartItems || JSON.parse(localStorage.getItem('cart') || '[]');
-  const [isStoreOpen, setIsStoreOpen] = useState(false);
   const total = cartItems.reduce((sum, item) => sum + item.totalPrice, 0);
   const deliveryFee = 5.00;
   const finalTotal = total + deliveryFee;
@@ -40,27 +41,18 @@ const Checkout = () => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    checkStoreHours();
-    const interval = setInterval(checkStoreHours, 60000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const checkStoreHours = () => {
-    const hour = new Date().getHours();
-    const isOpen = hour >= 18 || hour < 1;
-    setIsStoreOpen(isOpen);
-    
+    // Verificar se a loja está aberta quando acessar checkout
     if (!isOpen) {
-      toast.error('Loja fechada! Funcionamos das 18:00 às 00:00');
+      toast.error('Loja fechada! Não é possível finalizar pedidos.');
       navigate('/');
     }
-  };
+  }, [isOpen, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!isStoreOpen) {
-      toast.error('Loja fechada! Não é possível fazer pedidos.');
+    if (!checkStoreInteraction()) {
+      navigate('/');
       return;
     }
     
@@ -186,6 +178,9 @@ const Checkout = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-500 via-red-600 to-pink-700">
+      {/* Status Banner */}
+      <StoreStatusBanner />
+
       {/* Header */}
       <header className="bg-black/90 backdrop-blur-sm shadow-xl">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
@@ -204,9 +199,11 @@ const Checkout = () => {
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-white">FINALIZAR PEDIDO</h1>
-                <div className="flex items-center gap-1 text-green-400 text-sm">
+                <div className="flex items-center gap-1 text-sm">
                   <Clock className="h-4 w-4" />
-                  <span>Aberto até 00:00</span>
+                  <span className={isOpen ? 'text-green-400' : 'text-red-400'}>
+                    {isOpen ? 'Aberto até 00:00' : 'Loja Fechada'}
+                  </span>
                 </div>
               </div>
             </div>
@@ -338,7 +335,7 @@ const Checkout = () => {
                 <Button 
                   type="submit" 
                   className="w-full bg-green-600 hover:bg-green-700 text-white text-lg py-3" 
-                  disabled={loading || !isStoreOpen}
+                  disabled={loading || !isOpen}
                 >
                   {loading ? 'Processando...' : 'Finalizar Pedido'}
                 </Button>

@@ -1,221 +1,198 @@
-
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { 
-  DollarSign, 
+  LogOut, 
   Package, 
   Clock, 
   CheckCircle, 
-  LogOut,
-  Bell,
-  ChefHat,
-  Truck,
+  Truck, 
+  DollarSign,
   Calendar,
-  TrendingUp
+  TrendingUp,
+  Users,
+  Store
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useStoreStatus } from '@/hooks/useStoreStatus';
 
-interface OrderWithDetails {
+interface Order {
   id: string;
+  customer_name: string;
+  customer_phone: string;
+  customer_address: string;
+  items: { name: string; quantity: number; }[];
+  total_amount: number;
   status: string;
-  payment_status: string;
-  payment_method: string;
-  total: number;
   created_at: string;
-  estimated_delivery_time?: string;
-  customers?: {
-    name: string;
-    phone: string;
-  };
-  delivery_addresses?: {
-    street: string;
-    number: string;
-    complement?: string;
-    neighborhood: string;
-    city: string;
-  };
-  order_items?: Array<{
-    quantity: number;
-    unit_price: number;
-    total_price: number;
-    products?: {
-      name: string;
-    };
-  }>;
-  notes?: string;
+}
+
+interface DashboardStats {
+  pending: number;
+  preparing: number;
+  ready: number;
+  delivering: number;
+  completed: number;
+  todayRevenue: number;
+  monthRevenue: number;
+  yearRevenue: number;
 }
 
 const StaffDashboard = () => {
   const navigate = useNavigate();
-  const [orders, setOrders] = useState<OrderWithDetails[]>([]);
+  const { storeStatus, toggleStoreStatus, isOpen } = useStoreStatus();
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [stats, setStats] = useState<DashboardStats>({
+    pending: 0,
+    preparing: 0,
+    ready: 0,
+    delivering: 0,
+    completed: 0,
+    todayRevenue: 0,
+    monthRevenue: 0,
+    yearRevenue: 0
+  });
   const [loading, setLoading] = useState(true);
   const [selectedPeriod, setSelectedPeriod] = useState('today');
-  const [stats, setStats] = useState({
-    totalOrders: 0,
-    pendingOrders: 0,
-    preparingOrders: 0,
-    readyOrders: 0,
-    deliveringOrders: 0,
-    completedOrders: 0,
-    totalRevenue: 0,
-    todayRevenue: 0
-  });
 
   useEffect(() => {
-    // Verificar autenticação
-    const isAuthenticated = localStorage.getItem('staff_authenticated');
-    if (!isAuthenticated) {
+    const isLoggedIn = localStorage.getItem('staff_logged_in');
+    if (!isLoggedIn) {
       navigate('/staff-login');
-      return;
+    } else {
+      fetchOrders(selectedPeriod);
+      fetchStats();
     }
+  }, [navigate, selectedPeriod]);
 
-    fetchOrders();
-    
-    // Atualizar a cada 10 segundos
-    const interval = setInterval(fetchOrders, 10000);
-    
-    // Real-time updates
-    const channel = supabase
-      .channel('orders-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'orders'
-        },
-        () => {
-          fetchOrders();
-          toast.success('Novo pedido recebido!', {
-            duration: 5000,
-          });
-        }
-      )
-      .subscribe();
-    
-    return () => {
-      clearInterval(interval);
-      supabase.removeChannel(channel);
-    };
-  }, [navigate]);
-
-  const fetchOrders = async () => {
+  const fetchOrders = async (period: string) => {
+    setLoading(true);
     try {
+      let startDate = new Date();
+      let endDate = new Date();
+
+      if (period === 'today') {
+        startDate.setHours(0, 0, 0, 0);
+        endDate.setHours(23, 59, 59, 999);
+      } else if (period === 'week') {
+        const day = startDate.getDay();
+        const diff = startDate.getDate() - day + (day === 0 ? -6 : 1);
+        startDate = new Date(startDate.setDate(diff));
+        startDate.setHours(0, 0, 0, 0);
+        endDate.setHours(23, 59, 59, 999);
+      } else if (period === 'month') {
+        startDate = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
+        endDate = new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0);
+        startDate.setHours(0, 0, 0, 0);
+        endDate.setHours(23, 59, 59, 999);
+      }
+
       const { data, error } = await supabase
         .from('orders')
         .select(`
-          *,
-          customers (name, phone),
-          delivery_addresses (street, number, complement, neighborhood, city),
-          order_items (quantity, unit_price, total_price, products (name))
+          id,
+          created_at,
+          total,
+          status,
+          customers (
+            name,
+            phone
+          ),
+          delivery_addresses (
+            street,
+            number,
+            complement,
+            neighborhood,
+            city
+          ),
+          order_items (
+            quantity,
+            products (
+              name
+            )
+          )
         `)
-        .order('created_at', { ascending: false });
+        .gte('created_at', startDate.toISOString())
+        .lte('created_at', endDate.toISOString());
 
       if (error) throw error;
 
-      setOrders(data || []);
-      calculateStats(data || []);
-    } catch (error) {
+      const formattedOrders = data.map(order => ({
+        id: order.id,
+        created_at: order.created_at,
+        total_amount: order.total,
+        status: order.status,
+        customer_name: order.customers?.name || 'N/A',
+        customer_phone: order.customers?.phone || 'N/A',
+        customer_address: `${order.delivery_addresses?.street || 'N/A'}, ${order.delivery_addresses?.number || 'N/A'}, ${order.delivery_addresses?.neighborhood || 'N/A'}`,
+        items: order.order_items?.map(item => ({
+          name: item.products?.name || 'N/A',
+          quantity: item.quantity
+        })) || []
+      }));
+
+      setOrders(formattedOrders);
+    } catch (error: any) {
       console.error('Erro ao buscar pedidos:', error);
-      toast.error('Erro ao carregar pedidos');
+      toast.error('Erro ao buscar pedidos');
     } finally {
       setLoading(false);
     }
   };
 
-  const calculateStats = (orders: OrderWithDetails[]) => {
-    const today = new Date().toISOString().split('T')[0];
-    const todayOrders = orders.filter(order => 
-      order.created_at.startsWith(today)
-    );
-    
-    const stats = {
-      totalOrders: orders.length,
-      pendingOrders: orders.filter(order => order.status === 'pending').length,
-      preparingOrders: orders.filter(order => order.status === 'preparing').length,
-      readyOrders: orders.filter(order => order.status === 'ready').length,
-      deliveringOrders: orders.filter(order => order.status === 'delivering').length,
-      completedOrders: orders.filter(order => order.status === 'delivered').length,
-      totalRevenue: orders.reduce((sum, order) => sum + order.total, 0),
-      todayRevenue: todayOrders.reduce((sum, order) => sum + order.total, 0)
-    };
-    
-    setStats(stats);
-  };
-
-  const updateOrderStatus = async (orderId: string, status: string) => {
+  const fetchStats = async () => {
     try {
-      const updateData: any = { status };
-      
-      // Adicionar timestamps específicos
-      if (status === 'confirmed') {
-        updateData.confirmed_at = new Date().toISOString();
-      } else if (status === 'delivered') {
-        updateData.delivered_at = new Date().toISOString();
-      }
-
-      const { error } = await supabase
-        .from('orders')
-        .update(updateData)
-        .eq('id', orderId);
+      const { data, error } = await supabase
+        .from('dashboard_stats')
+        .select('*')
+        .single();
 
       if (error) throw error;
-      
-      toast.success('Status atualizado com sucesso!');
-      fetchOrders();
-    } catch (error) {
-      console.error('Erro ao atualizar status:', error);
-      toast.error('Erro ao atualizar status');
+
+      setStats(data);
+    } catch (error: any) {
+      console.error('Erro ao buscar estatísticas:', error);
+      toast.error('Erro ao buscar estatísticas');
     }
   };
 
-  const confirmPayment = async (orderId: string) => {
+  const updateOrderStatus = async (orderId: string, newStatus: string) => {
     try {
       const { error } = await supabase
         .from('orders')
-        .update({ 
-          payment_status: 'paid',
-          status: 'confirmed',
-          confirmed_at: new Date().toISOString()
-        })
+        .update({ status: newStatus })
         .eq('id', orderId);
 
       if (error) throw error;
-      
-      toast.success('Pagamento confirmado!');
-      fetchOrders();
-    } catch (error) {
-      console.error('Erro ao confirmar pagamento:', error);
-      toast.error('Erro ao confirmar pagamento');
-    }
-  };
 
-  const handleLogout = () => {
-    localStorage.removeItem('staff_authenticated');
-    localStorage.removeItem('staff_username');
-    navigate('/staff-login');
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'confirmed': return 'bg-blue-100 text-blue-800';
-      case 'preparing': return 'bg-orange-100 text-orange-800';
-      case 'ready': return 'bg-green-100 text-green-800';
-      case 'delivering': return 'bg-purple-100 text-purple-800';
-      case 'delivered': return 'bg-gray-100 text-gray-800';
-      default: return 'bg-gray-100 text-gray-800';
+      setOrders(orders.map(order =>
+        order.id === orderId ? { ...order, status: newStatus } : order
+      ));
+      toast.success('Status do pedido atualizado!');
+      fetchStats();
+    } catch (error: any) {
+      console.error('Erro ao atualizar status do pedido:', error);
+      toast.error('Erro ao atualizar status do pedido');
     }
   };
 
   const formatPrice = (price: number) => {
-    return `R$ ${price.toFixed(2).replace('.', ',')}`;
+    return `R$ ${price?.toFixed(2).replace('.', ',')}`;
+  };
+
+  const handleStoreToggle = async () => {
+    await toggleStoreStatus('Staff Dashboard');
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('staff_logged_in');
+    navigate('/staff-login');
   };
 
   if (loading) {
@@ -223,7 +200,7 @@ const StaffDashboard = () => {
       <div className="min-h-screen bg-gradient-to-br from-orange-500 via-red-600 to-pink-700 flex items-center justify-center">
         <div className="text-center text-white">
           <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-white mx-auto mb-4"></div>
-          <p className="text-xl">Carregando dashboard...</p>
+          <p className="text-xl">Carregando painel...</p>
         </div>
       </div>
     );
@@ -232,38 +209,42 @@ const StaffDashboard = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-500 via-red-600 to-pink-700">
       {/* Header */}
-      <header className="bg-black/90 backdrop-blur-sm shadow-xl border-b border-white/20">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="bg-red-600 text-white rounded-full w-16 h-16 flex items-center justify-center text-3xl font-bold">
+      <header className="bg-black/90 backdrop-blur-sm shadow-xl">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center space-x-4">
+              <div className="bg-red-600 text-white rounded-full w-12 h-12 flex items-center justify-center text-2xl font-bold">
                 T
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-white">TALOLA PIZZA</h1>
-                <p className="text-orange-300">Dashboard Administrativo</p>
+                <h1 className="text-2xl font-bold text-white">PAINEL ADMINISTRATIVO</h1>
+                <p className="text-orange-300 text-sm">Gestão de pedidos e estatísticas</p>
               </div>
-              <Badge variant="secondary" className="bg-green-100 text-green-800 ml-4">
-                <Bell className="h-3 w-3 mr-1" />
-                {stats.pendingOrders} Pendentes
-              </Badge>
             </div>
             
-            <div className="flex items-center gap-4">
-              <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-                <SelectTrigger className="w-40 bg-white/10 border-white/20 text-white">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="today">Hoje</SelectItem>
-                  <SelectItem value="week">Esta Semana</SelectItem>
-                  <SelectItem value="month">Este Mês</SelectItem>
-                  <SelectItem value="year">Este Ano</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="flex items-center space-x-6">
+              {/* Controle da Loja */}
+              <div className="flex items-center space-x-4 bg-white/10 rounded-lg p-3">
+                <Store className="h-5 w-5 text-white" />
+                <Label htmlFor="store-status" className="text-white font-medium">
+                  Status da Loja
+                </Label>
+                <Switch
+                  id="store-status"
+                  checked={isOpen}
+                  onCheckedChange={handleStoreToggle}
+                />
+                <span className={`font-bold ${isOpen ? 'text-green-400' : 'text-red-400'}`}>
+                  {isOpen ? 'ABERTA' : 'FECHADA'}
+                </span>
+              </div>
               
-              <Button onClick={handleLogout} variant="outline" size="sm" className="border-white/20 text-white hover:bg-white/10">
-                <LogOut className="h-4 w-4 mr-2" />
+              <Button
+                onClick={handleLogout}
+                variant="ghost"
+                className="text-white hover:text-orange-300"
+              >
+                <LogOut className="h-5 w-5 mr-2" />
                 Sair
               </Button>
             </div>
@@ -272,257 +253,152 @@ const StaffDashboard = () => {
       </header>
 
       <div className="container mx-auto px-4 py-8">
-        {/* Cards de Estatísticas */}
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-8">
-          <Card className="bg-black/60 backdrop-blur-sm border-white/20">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-orange-200">Pendentes</p>
-                  <p className="text-2xl font-bold text-yellow-400">{stats.pendingOrders}</p>
-                </div>
-                <Clock className="h-8 w-8 text-yellow-400" />
-              </div>
+        {/* Stats Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-8">
+          <Card className="bg-blue-600/20 backdrop-blur-sm border-blue-400/30">
+            <CardContent className="p-4 text-center">
+              <Package className="h-8 w-8 text-blue-400 mx-auto mb-2" />
+              <p className="text-2xl font-bold text-white">{stats.pending}</p>
+              <p className="text-blue-200 text-sm">Pendentes</p>
             </CardContent>
           </Card>
 
-          <Card className="bg-black/60 backdrop-blur-sm border-white/20">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-orange-200">Preparando</p>
-                  <p className="text-2xl font-bold text-orange-400">{stats.preparingOrders}</p>
-                </div>
-                <ChefHat className="h-8 w-8 text-orange-400" />
-              </div>
+          <Card className="bg-yellow-600/20 backdrop-blur-sm border-yellow-400/30">
+            <CardContent className="p-4 text-center">
+              <Clock className="h-8 w-8 text-yellow-400 mx-auto mb-2" />
+              <p className="text-2xl font-bold text-white">{stats.preparing}</p>
+              <p className="text-yellow-200 text-sm">Preparando</p>
             </CardContent>
           </Card>
 
-          <Card className="bg-black/60 backdrop-blur-sm border-white/20">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-orange-200">Prontos</p>
-                  <p className="text-2xl font-bold text-green-400">{stats.readyOrders}</p>
-                </div>
-                <CheckCircle className="h-8 w-8 text-green-400" />
-              </div>
+          <Card className="bg-orange-600/20 backdrop-blur-sm border-orange-400/30">
+            <CardContent className="p-4 text-center">
+              <CheckCircle className="h-8 w-8 text-orange-400 mx-auto mb-2" />
+              <p className="text-2xl font-bold text-white">{stats.ready}</p>
+              <p className="text-orange-200 text-sm">Prontos</p>
             </CardContent>
           </Card>
 
-          <Card className="bg-black/60 backdrop-blur-sm border-white/20">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-orange-200">Entregando</p>
-                  <p className="text-2xl font-bold text-purple-400">{stats.deliveringOrders}</p>
-                </div>
-                <Truck className="h-8 w-8 text-purple-400" />
-              </div>
+          <Card className="bg-purple-600/20 backdrop-blur-sm border-purple-400/30">
+            <CardContent className="p-4 text-center">
+              <Truck className="h-8 w-8 text-purple-400 mx-auto mb-2" />
+              <p className="text-2xl font-bold text-white">{stats.delivering}</p>
+              <p className="text-purple-200 text-sm">Entregando</p>
             </CardContent>
           </Card>
 
-          <Card className="bg-black/60 backdrop-blur-sm border-white/20">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-orange-200">Hoje</p>
-                  <p className="text-xl font-bold text-green-400">{formatPrice(stats.todayRevenue)}</p>
-                </div>
-                <TrendingUp className="h-8 w-8 text-green-400" />
-              </div>
+          <Card className="bg-green-600/20 backdrop-blur-sm border-green-400/30">
+            <CardContent className="p-4 text-center">
+              <Users className="h-8 w-8 text-green-400 mx-auto mb-2" />
+              <p className="text-2xl font-bold text-white">{stats.completed}</p>
+              <p className="text-green-200 text-sm">Entregues</p>
             </CardContent>
           </Card>
 
-          <Card className="bg-black/60 backdrop-blur-sm border-white/20">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-orange-200">Total</p>
-                  <p className="text-xl font-bold text-green-400">{formatPrice(stats.totalRevenue)}</p>
-                </div>
-                <DollarSign className="h-8 w-8 text-green-400" />
-              </div>
+          <Card className="bg-red-600/20 backdrop-blur-sm border-red-400/30">
+            <CardContent className="p-4 text-center">
+              <DollarSign className="h-8 w-8 text-red-400 mx-auto mb-2" />
+              <p className="text-2xl font-bold text-white">{formatPrice(stats.todayRevenue)}</p>
+              <p className="text-red-200 text-sm">Hoje</p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-emerald-600/20 backdrop-blur-sm border-emerald-400/30">
+            <CardContent className="p-4 text-center">
+              <TrendingUp className="h-8 w-8 text-emerald-400 mx-auto mb-2" />
+              <p className="text-2xl font-bold text-white">{formatPrice(stats.monthRevenue)}</p>
+              <p className="text-emerald-200 text-sm">Mês</p>
             </CardContent>
           </Card>
         </div>
 
-        {/* Lista de Pedidos */}
+        {/* Orders Section */}
         <Card className="bg-black/60 backdrop-blur-sm border-white/20">
           <CardHeader>
-            <CardTitle className="text-white">Pedidos</CardTitle>
+            <div className="flex justify-between items-center">
+              <CardTitle className="text-white flex items-center gap-2">
+                <Package className="h-6 w-6" />
+                Pedidos
+              </CardTitle>
+              
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2 text-white">
+                  <Calendar className="h-4 w-4" />
+                  <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
+                    <SelectTrigger className="w-32 bg-white/10 border-white/20 text-white">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="today">Hoje</SelectItem>
+                      <SelectItem value="week">Semana</SelectItem>
+                      <SelectItem value="month">Mês</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <Badge className="bg-white/20 text-white">
+                  {orders.length} pedidos
+                </Badge>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="pending" className="w-full">
-              <TabsList className="grid w-full grid-cols-6 bg-white/10">
-                <TabsTrigger value="pending" className="text-white data-[state=active]:bg-yellow-600">
-                  Pendentes ({stats.pendingOrders})
-                </TabsTrigger>
-                <TabsTrigger value="preparing" className="text-white data-[state=active]:bg-orange-600">
-                  Preparando ({stats.preparingOrders})
-                </TabsTrigger>
-                <TabsTrigger value="ready" className="text-white data-[state=active]:bg-green-600">
-                  Prontos ({stats.readyOrders})
-                </TabsTrigger>
-                <TabsTrigger value="delivering" className="text-white data-[state=active]:bg-purple-600">
-                  Entregando ({stats.deliveringOrders})
-                </TabsTrigger>
-                <TabsTrigger value="delivered" className="text-white data-[state=active]:bg-gray-600">
-                  Entregues ({stats.completedOrders})
-                </TabsTrigger>
-                <TabsTrigger value="all" className="text-white data-[state=active]:bg-blue-600">
-                  Todos
-                </TabsTrigger>
-              </TabsList>
-
-              {['pending', 'preparing', 'ready', 'delivering', 'delivered', 'all'].map(status => (
-                <TabsContent key={status} value={status} className="space-y-4">
-                  {orders
-                    .filter(order => status === 'all' || order.status === status)
-                    .map(order => (
-                      <OrderCard 
-                        key={order.id} 
-                        order={order} 
-                        onStatusUpdate={updateOrderStatus}
-                        onPaymentConfirm={confirmPayment}
-                        getStatusColor={getStatusColor}
-                        formatPrice={formatPrice}
-                      />
-                    ))}
-                </TabsContent>
-              ))}
-            </Tabs>
+            <div className="overflow-x-auto">
+              <table className="w-full text-white">
+                <thead>
+                  <tr className="text-left">
+                    <th className="py-2">ID</th>
+                    <th className="py-2">Data</th>
+                    <th className="py-2">Cliente</th>
+                    <th className="py-2">Endereço</th>
+                    <th className="py-2">Itens</th>
+                    <th className="py-2">Total</th>
+                    <th className="py-2">Status</th>
+                    <th className="py-2">Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {orders.map(order => (
+                    <tr key={order.id} className="border-b border-white/20">
+                      <td className="py-3">{order.id}</td>
+                      <td className="py-3">{new Date(order.created_at).toLocaleDateString()}</td>
+                      <td className="py-3">{order.customer_name}</td>
+                      <td className="py-3">{order.customer_address}</td>
+                      <td className="py-3">
+                        {order.items.map(item => (
+                          <div key={item.name}>
+                            {item.quantity}x {item.name}
+                          </div>
+                        ))}
+                      </td>
+                      <td className="py-3">{formatPrice(order.total_amount)}</td>
+                      <td className="py-3">
+                        <Select value={order.status} onValueChange={(value) => updateOrderStatus(order.id, value)}>
+                          <SelectTrigger className="w-40 bg-white/10 border-white/20 text-white">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="pending">Pendente</SelectItem>
+                            <SelectItem value="preparing">Preparando</SelectItem>
+                            <SelectItem value="ready">Pronto</SelectItem>
+                            <SelectItem value="delivering">Entregando</SelectItem>
+                            <SelectItem value="completed">Entregue</SelectItem>
+                            <SelectItem value="canceled">Cancelado</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </td>
+                      <td className="py-3">
+                        {/* Add any actions here if needed */}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </CardContent>
         </Card>
       </div>
     </div>
-  );
-};
-
-// Componente do Card de Pedido
-const OrderCard = ({ 
-  order, 
-  onStatusUpdate, 
-  onPaymentConfirm,
-  getStatusColor,
-  formatPrice
-}: { 
-  order: OrderWithDetails; 
-  onStatusUpdate: (id: string, status: string) => void;
-  onPaymentConfirm: (id: string) => void;
-  getStatusColor: (status: string) => string;
-  formatPrice: (price: number) => string;
-}) => {
-  const formatAddress = () => {
-    if (!order.delivery_addresses) return 'Endereço não disponível';
-    const addr = order.delivery_addresses;
-    return `${addr.street}, ${addr.number}${addr.complement ? `, ${addr.complement}` : ''} - ${addr.neighborhood}, ${addr.city}`;
-  };
-
-  return (
-    <Card className="bg-white/10 backdrop-blur-sm border-white/20 border-l-4 border-l-red-500">
-      <CardContent className="p-6">
-        <div className="flex justify-between items-start mb-4">
-          <div>
-            <h3 className="font-semibold text-lg text-white">Pedido #{order.id.slice(-8)}</h3>
-            <p className="text-sm text-orange-200">
-              {new Date(order.created_at).toLocaleString('pt-BR')}
-            </p>
-          </div>
-          <div className="text-right">
-            <p className="text-lg font-bold text-green-400">
-              {formatPrice(order.total)}
-            </p>
-            <div className="flex gap-2 mt-2">
-              <Badge className={getStatusColor(order.status)}>
-                {order.status}
-              </Badge>
-              <Badge className={order.payment_status === 'paid' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}>
-                {order.payment_status === 'paid' ? 'Pago' : 'Pendente'}
-              </Badge>
-            </div>
-          </div>
-        </div>
-
-        <div className="grid md:grid-cols-2 gap-4 mb-4">
-          <div>
-            <p className="font-medium text-white">{order.customers?.name || 'Cliente não identificado'}</p>
-            <p className="text-sm text-orange-200">{order.customers?.phone || 'Telefone não disponível'}</p>
-            <p className="text-sm text-orange-200">{formatAddress()}</p>
-          </div>
-          <div>
-            <p className="font-medium text-white">Itens:</p>
-            <div className="text-sm text-orange-200">
-              {order.order_items?.map((item, index) => (
-                <div key={index}>
-                  {item.quantity}x {item.products?.name || 'Item'} - {formatPrice(item.total_price)}
-                </div>
-              )) || <div>Itens não disponíveis</div>}
-            </div>
-            {order.notes && (
-              <div className="mt-2">
-                <p className="text-xs text-gray-400">Obs: {order.notes}</p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="flex gap-2 flex-wrap">
-          {order.payment_status === 'pending' && order.payment_method === 'pix' && (
-            <Button
-              size="sm"
-              onClick={() => onPaymentConfirm(order.id)}
-              className="bg-green-600 hover:bg-green-700"
-            >
-              <CheckCircle className="h-4 w-4 mr-1" />
-              Confirmar Pagamento
-            </Button>
-          )}
-          
-          {order.status === 'pending' && (
-            <Button
-              size="sm"
-              onClick={() => onStatusUpdate(order.id, 'preparing')}
-              className="bg-orange-600 hover:bg-orange-700"
-            >
-              <ChefHat className="h-4 w-4 mr-1" />
-              Iniciar Preparo
-            </Button>
-          )}
-          
-          {order.status === 'preparing' && (
-            <Button
-              size="sm"
-              onClick={() => onStatusUpdate(order.id, 'ready')}
-              className="bg-green-600 hover:bg-green-700"
-            >
-              Marcar como Pronto
-            </Button>
-          )}
-          
-          {order.status === 'ready' && (
-            <Button
-              size="sm"
-              onClick={() => onStatusUpdate(order.id, 'delivering')}
-              className="bg-purple-600 hover:bg-purple-700"
-            >
-              <Truck className="h-4 w-4 mr-1" />
-              Saiu para Entrega
-            </Button>
-          )}
-          
-          {order.status === 'delivering' && (
-            <Button
-              size="sm"
-              onClick={() => onStatusUpdate(order.id, 'delivered')}
-              className="bg-gray-600 hover:bg-gray-700"
-            >
-              Marcar como Entregue
-            </Button>
-          )}
-        </div>
-      </CardContent>
-    </Card>
   );
 };
 
