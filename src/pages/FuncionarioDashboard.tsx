@@ -16,7 +16,6 @@ import {
   Package, 
   LogOut,
   Filter,
-  Star,
   Eye,
   EyeOff
 } from 'lucide-react';
