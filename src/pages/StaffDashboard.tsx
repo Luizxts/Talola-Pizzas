@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
@@ -31,6 +32,7 @@ interface Order {
   items: { name: string; quantity: number; }[];
   total_amount: number;
   status: string;
+  payment_status: string;
   created_at: string;
 }
 
@@ -104,13 +106,14 @@ const StaffDashboard = () => {
         endDate.setHours(23, 59, 59, 999);
       }
 
-      const { data, error } = await supabase
+      let query = supabase
         .from('orders')
         .select(`
           id,
           created_at,
           total,
           status,
+          payment_status,
           customers (
             name,
             phone
@@ -130,8 +133,13 @@ const StaffDashboard = () => {
           )
         `)
         .gte('created_at', startDate.toISOString())
-        .lte('created_at', endDate.toISOString())
-        .eq('status', status);
+        .lte('created_at', endDate.toISOString());
+
+      if (status !== 'all') {
+        query = query.eq('status', status);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
 
@@ -140,6 +148,7 @@ const StaffDashboard = () => {
         created_at: order.created_at,
         total_amount: order.total,
         status: order.status,
+        payment_status: order.payment_status || 'pending',
         customer_name: order.customers?.name || 'N/A',
         customer_phone: order.customers?.phone || 'N/A',
         customer_address: `${order.delivery_addresses?.street || 'N/A'}, ${order.delivery_addresses?.number || 'N/A'}, ${order.delivery_addresses?.neighborhood || 'N/A'}`,
@@ -180,8 +189,8 @@ const StaffDashboard = () => {
           todayRevenue: data.todayrevenue || 0,
           monthRevenue: data.monthrevenue || 0,
           yearRevenue: data.yearrevenue || 0,
-          avgRating: data.avgrating || 0,
-          totalReviews: data.totalreviews || 0
+          avgRating: 0, // Will be 0 until avgrating is available in view
+          totalReviews: 0 // Will be 0 until totalreviews is available in view
         });
       }
     } catch (error: any) {

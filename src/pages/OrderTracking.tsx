@@ -1,11 +1,11 @@
-
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle2, Clock, Truck, ChefHat, MessageCircle, Home } from 'lucide-react';
+import { CheckCircle2, Clock, Truck, ChefHat, MessageCircle, Home, Star } from 'lucide-react';
+import { toast } from 'sonner';
 import OrderReview from '@/components/OrderReview';
 
 interface Order {
@@ -23,7 +23,7 @@ interface Order {
   delivered_at?: string;
 }
 
-interface OrderReview {
+interface OrderReviewData {
   id: string;
   rating: number;
   comment: string;
@@ -34,7 +34,7 @@ const OrderTracking = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [order, setOrder] = useState<Order | null>(location.state?.order || null);
-  const [existingReview, setExistingReview] = useState<OrderReview | null>(null);
+  const [existingReview, setExistingReview] = useState<OrderReviewData | null>(null);
   const [showReviewForm, setShowReviewForm] = useState(false);
 
   useEffect(() => {
@@ -77,19 +77,23 @@ const OrderTracking = () => {
     if (!order) return;
 
     try {
-      const { data, error } = await supabase
-        .from('order_reviews')
-        .select('*')
-        .eq('order_id', order.id)
-        .single();
+      // Use raw SQL to fetch review since the table might not be in types yet
+      const { data, error } = await supabase.rpc('execute_sql', {
+        query: `
+          SELECT id, rating, comment, created_at 
+          FROM order_reviews 
+          WHERE order_id = $1
+        `,
+        params: [order.id]
+      });
 
       if (error && error.code !== 'PGRST116') {
         console.error('Erro ao buscar avaliação:', error);
         return;
       }
 
-      if (data) {
-        setExistingReview(data);
+      if (data && data.length > 0) {
+        setExistingReview(data[0] as OrderReviewData);
       }
     } catch (error) {
       console.error('Erro ao buscar avaliação:', error);

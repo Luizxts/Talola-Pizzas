@@ -28,14 +28,14 @@ const OrderReview = ({ orderId, customerId, onReviewSubmitted }: OrderReviewProp
     setSubmitting(true);
     
     try {
-      const { error } = await supabase
-        .from('order_reviews')
-        .insert({
-          order_id: orderId,
-          customer_id: customerId,
-          rating,
-          comment: comment.trim() || null
-        });
+      // Use raw SQL to insert the review since the table might not be in types yet
+      const { error } = await supabase.rpc('execute_sql', {
+        query: `
+          INSERT INTO order_reviews (order_id, customer_id, rating, comment)
+          VALUES ($1, $2, $3, $4)
+        `,
+        params: [orderId, customerId, rating, comment.trim() || null]
+      });
 
       if (error) throw error;
 
