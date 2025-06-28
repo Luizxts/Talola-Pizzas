@@ -6,6 +6,8 @@ import { toast } from 'sonner';
 export interface StoreStatus {
   id: string;
   is_open: boolean;
+  opening_time?: string;
+  closing_time?: string;
   last_updated: string;
   updated_by: string;
   created_at: string;
@@ -32,6 +34,8 @@ export const useStoreStatus = () => {
         // Se não existe configuração, criar uma padrão (aberta)
         const defaultStatus = {
           is_open: true,
+          opening_time: '18:00',
+          closing_time: '00:00',
           last_updated: new Date().toISOString(),
           updated_by: 'Sistema'
         };
@@ -113,11 +117,19 @@ export const useStoreStatus = () => {
     return true;
   };
 
+  const getFormattedHours = () => {
+    if (!storeStatus) return 'Carregando...';
+    const opening = storeStatus.opening_time || '18:00';
+    const closing = storeStatus.closing_time || '00:00';
+    return `${opening} - ${closing}`;
+  };
+
   return {
     storeStatus,
     loading,
     toggleStoreStatus,
     checkStoreInteraction,
+    getFormattedHours,
     isOpen: storeStatus?.is_open ?? false
   };
 };

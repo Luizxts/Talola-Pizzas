@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -26,7 +25,7 @@ interface Category {
 }
 
 const Index = () => {
-  const { checkStoreInteraction, isOpen } = useStoreStatus();
+  const { checkStoreInteraction, isOpen, getFormattedHours } = useStoreStatus();
   const [categories, setCategories] = useState<Category[]>([]);
   const [products, setProducts] = useState<Record<string, Product[]>>({});
   const [loading, setLoading] = useState(true);
@@ -122,7 +121,7 @@ const Index = () => {
                     {isOpen ? 'ABERTO' : 'FECHADO'}
                   </span>
                 </div>
-                <p className="text-sm">18:00 - 00:00</p>
+                <p className="text-sm">{getFormattedHours()}</p>
               </div>
               
               <Link 
@@ -166,7 +165,7 @@ const Index = () => {
                       {isOpen ? 'ABERTO' : 'FECHADO'}
                     </span>
                   </div>
-                  <p className="text-sm">18:00 - 00:00</p>
+                  <p className="text-sm">{getFormattedHours()}</p>
                 </div>
                 
                 <Link 
@@ -286,7 +285,7 @@ const Index = () => {
                 </div>
                 <div className="flex items-center gap-3">
                   <Clock className="h-5 w-5 sm:h-6 sm:w-6 text-red-400" />
-                  <span className="text-sm sm:text-base">Todos os dias das 18:00 às 00:00</span>
+                  <span className="text-sm sm:text-base">Funcionamos das {getFormattedHours()}</span>
                 </div>
               </div>
             </div>

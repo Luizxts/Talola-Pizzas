@@ -4,7 +4,7 @@ import { Clock, Phone } from 'lucide-react';
 import { useStoreStatus } from '@/hooks/useStoreStatus';
 
 const StoreStatusBanner = () => {
-  const { storeStatus, isOpen } = useStoreStatus();
+  const { storeStatus, isOpen, getFormattedHours } = useStoreStatus();
 
   if (!storeStatus) return null;
 
@@ -14,7 +14,7 @@ const StoreStatusBanner = () => {
         <div className="flex items-center justify-center gap-2">
           <Clock className="h-4 w-4" />
           <span className="font-medium">LOJA ABERTA</span>
-          <span className="hidden md:inline">- Funcionamos das 18:00 às 00:00</span>
+          <span className="hidden md:inline">- Funcionamos das {getFormattedHours()}</span>
         </div>
       </div>
     );

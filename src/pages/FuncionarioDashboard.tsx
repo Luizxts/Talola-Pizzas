@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -20,6 +19,7 @@ import {
   EyeOff
 } from 'lucide-react';
 import { toast } from 'sonner';
+import StoreHoursConfig from '@/components/StoreHoursConfig';
 
 interface Order {
   id: string;
@@ -435,6 +435,9 @@ const FuncionarioDashboard = () => {
               </CardContent>
             </Card>
           </div>
+
+          {/* Configuração de Horários */}
+          <StoreHoursConfig />
 
           {/* Filtros */}
           <Card className="bg-black/60 backdrop-blur-sm border-white/20">
