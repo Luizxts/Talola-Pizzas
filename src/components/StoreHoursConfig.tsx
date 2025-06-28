@@ -39,23 +39,49 @@ const StoreHoursConfig = () => {
       }
     } catch (error) {
       console.error('Erro ao buscar horários:', error);
+      toast.error('Erro ao carregar horários da loja');
     }
   };
 
   const handleSave = async () => {
     setLoading(true);
     try {
-      const { error } = await supabase
+      // First, get the existing store settings ID
+      const { data: existingSettings, error: fetchError } = await supabase
         .from('store_settings')
-        .update({
-          opening_time: hours.opening_time,
-          closing_time: hours.closing_time,
-          last_updated: new Date().toISOString(),
-          updated_by: 'Funcionário'
-        })
-        .eq('id', (await supabase.from('store_settings').select('id').single()).data?.id);
+        .select('id')
+        .single();
 
-      if (error) throw error;
+      if (fetchError && fetchError.code !== 'PGRST116') {
+        throw fetchError;
+      }
+
+      if (existingSettings) {
+        // Update existing settings
+        const { error } = await supabase
+          .from('store_settings')
+          .update({
+            opening_time: hours.opening_time,
+            closing_time: hours.closing_time,
+            last_updated: new Date().toISOString(),
+            updated_by: 'Funcionário'
+          })
+          .eq('id', existingSettings.id);
+
+        if (error) throw error;
+      } else {
+        // Create new settings if none exist
+        const { error } = await supabase
+          .from('store_settings')
+          .insert({
+            opening_time: hours.opening_time,
+            closing_time: hours.closing_time,
+            last_updated: new Date().toISOString(),
+            updated_by: 'Funcionário'
+          });
+
+        if (error) throw error;
+      }
 
       toast.success('Horários atualizados com sucesso!');
     } catch (error) {

@@ -2018,24 +2018,30 @@ export type Database = {
       }
       store_settings: {
         Row: {
+          closing_time: string | null
           created_at: string
           id: string
           is_open: boolean
           last_updated: string
+          opening_time: string | null
           updated_by: string
         }
         Insert: {
+          closing_time?: string | null
           created_at?: string
           id?: string
           is_open?: boolean
           last_updated?: string
+          opening_time?: string | null
           updated_by?: string
         }
         Update: {
+          closing_time?: string | null
           created_at?: string
           id?: string
           is_open?: boolean
           last_updated?: string
+          opening_time?: string | null
           updated_by?: string
         }
         Relationships: []
