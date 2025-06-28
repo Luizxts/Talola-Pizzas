@@ -79,7 +79,6 @@ const Index = () => {
     if (!checkStoreInteraction()) {
       return;
     }
-    // Se a loja estiver aberta, navegar normalmente
   };
 
   if (loading) {
@@ -95,7 +94,6 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-500 via-red-600 to-pink-700">
-      {/* Status Banner */}
       <StoreStatusBanner />
 
       {/* Header */}
@@ -236,8 +234,8 @@ const Index = () => {
             NOSSO CARDÁPIO
           </h2>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-8">
-            {categories.slice(0, 4).map((category) => (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-8">
+            {categories.map((category) => (
               <Card key={category.id} className={`bg-black/60 backdrop-blur-sm border-white/20 hover:bg-black/70 transition-all duration-300 transform hover:scale-105 ${!isOpen ? 'opacity-75' : ''}`}>
                 <CardContent className="p-4 sm:p-6 text-center">
                   <h3 className="text-xl sm:text-2xl font-bold text-white mb-4">{category.name}</h3>

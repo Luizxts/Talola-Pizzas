@@ -14,6 +14,7 @@ interface CartItem {
   totalPrice: number;
   selectedOptions?: Record<string, any>;
   isSpecialOffer?: boolean;
+  productId: string;
 }
 
 interface OrderCartProps {
@@ -21,13 +22,15 @@ interface OrderCartProps {
   onUpdateQuantity: (itemIndex: number, newQuantity: number) => void;
   onRemoveItem: (itemIndex: number) => void;
   onCheckout: () => void;
+  isStoreOpen: boolean;
 }
 
 const OrderCart: React.FC<OrderCartProps> = ({
   items,
   onUpdateQuantity,
   onRemoveItem,
-  onCheckout
+  onCheckout,
+  isStoreOpen
 }) => {
   const formatPrice = (price: number) => {
     return `R$ ${price.toFixed(2).replace('.', ',')}`;
@@ -39,11 +42,11 @@ const OrderCart: React.FC<OrderCartProps> = ({
 
   if (items.length === 0) {
     return (
-      <Card className="sticky top-4">
+      <Card className="sticky top-32 bg-black/60 backdrop-blur-sm border-white/20">
         <CardContent className="text-center py-8">
-          <ShoppingCart className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-          <p className="text-gray-500">Seu carrinho está vazio</p>
-          <p className="text-sm text-gray-400 mt-2">
+          <ShoppingCart className="mx-auto h-12 w-12 text-orange-400 mb-4" />
+          <p className="text-orange-200">Seu carrinho está vazio</p>
+          <p className="text-sm text-orange-300 mt-2">
             Adicione itens do cardápio para começar
           </p>
         </CardContent>
@@ -52,9 +55,9 @@ const OrderCart: React.FC<OrderCartProps> = ({
   }
 
   return (
-    <Card className="sticky top-4">
+    <Card className="sticky top-32 bg-black/60 backdrop-blur-sm border-white/20">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+        <CardTitle className="flex items-center gap-2 text-white">
           <ShoppingCart className="h-5 w-5" />
           Seu Pedido ({items.length} {items.length === 1 ? 'item' : 'itens'})
         </CardTitle>
@@ -64,34 +67,36 @@ const OrderCart: React.FC<OrderCartProps> = ({
         {/* Cart Items */}
         <div className="space-y-3 max-h-96 overflow-y-auto">
           {items.map((item, index) => (
-            <div key={`${item.id}-${index}-${JSON.stringify(item.selectedOptions)}`} className="border rounded-lg p-3">
+            <div key={`${item.id}-${index}`} className="bg-white/10 rounded-lg p-3 border border-white/10">
               <div className="flex justify-between items-start mb-2">
-                <h4 className="font-medium text-sm">{item.name}</h4>
+                <h4 className="font-medium text-sm text-white leading-tight">{item.name}</h4>
                 <Button
                   size="sm"
                   variant="ghost"
                   onClick={() => onRemoveItem(index)}
-                  className="text-red-600 hover:text-red-700 p-1"
+                  disabled={!isStoreOpen}
+                  className="text-red-400 hover:text-red-300 p-1 h-6 w-6"
                 >
-                  <Trash2 className="h-4 w-4" />
+                  <Trash2 className="h-3 w-3" />
                 </Button>
               </div>
               
               {/* Special Offer Badge */}
               {item.isSpecialOffer && (
-                <Badge className="bg-green-100 text-green-800 text-xs mb-2">
+                <Badge className="bg-green-600 text-white text-xs mb-2">
                   Oferta Especial
                 </Badge>
               )}
               
-              {/* Selected Options */}
-              {item.selectedOptions && Object.keys(item.selectedOptions).length > 0 && (
-                <div className="text-xs text-gray-600 mb-2">
-                  {Object.entries(item.selectedOptions).map(([key, option]: [string, any]) => (
-                    <Badge key={key} variant="outline" className="mr-1 text-xs">
-                      {option?.name}
-                    </Badge>
-                  ))}
+              {/* Selected Options Display */}
+              {item.selectedOptions && (
+                <div className="text-xs text-orange-200 mb-2 space-y-1">
+                  {item.selectedOptions.size && (
+                    <div>Tamanho: {item.selectedOptions.size.name}</div>
+                  )}
+                  {item.selectedOptions.extras && item.selectedOptions.extras.length > 0 && (
+                    <div>Extras: {item.selectedOptions.extras.map((e: any) => e.name).join(', ')}</div>
+                  )}
                 </div>
               )}
               
@@ -101,62 +106,64 @@ const OrderCart: React.FC<OrderCartProps> = ({
                     size="sm"
                     variant="outline"
                     onClick={() => onUpdateQuantity(index, Math.max(1, item.quantity - 1))}
-                    disabled={item.quantity <= 1}
-                    className="h-6 w-6 p-0"
+                    disabled={item.quantity <= 1 || !isStoreOpen}
+                    className="h-6 w-6 p-0 border-white/20 text-white hover:bg-white/10"
                   >
                     <Minus className="h-3 w-3" />
                   </Button>
-                  <span className="text-sm font-medium px-2">{item.quantity}</span>
+                  <span className="text-sm font-medium px-2 text-white">{item.quantity}</span>
                   <Button
                     size="sm"
                     variant="outline"
                     onClick={() => onUpdateQuantity(index, item.quantity + 1)}
-                    className="h-6 w-6 p-0"
+                    disabled={!isStoreOpen}
+                    className="h-6 w-6 p-0 border-white/20 text-white hover:bg-white/10"
                   >
                     <Plus className="h-3 w-3" />
                   </Button>
                 </div>
-                <span className="font-semibold text-sm">{formatPrice(item.totalPrice)}</span>
+                <span className="font-semibold text-sm text-green-400">{formatPrice(item.totalPrice)}</span>
               </div>
             </div>
           ))}
         </div>
 
-        <Separator />
+        <Separator className="bg-white/20" />
 
         {/* Order Summary */}
         <div className="space-y-2">
-          <div className="flex justify-between text-sm">
+          <div className="flex justify-between text-sm text-orange-200">
             <span>Subtotal</span>
             <span>{formatPrice(subtotal)}</span>
           </div>
-          <div className="flex justify-between text-sm">
+          <div className="flex justify-between text-sm text-orange-200">
             <span>Taxa de entrega</span>
             <span>{formatPrice(deliveryFee)}</span>
           </div>
-          <Separator />
-          <div className="flex justify-between font-bold">
+          <Separator className="bg-white/20" />
+          <div className="flex justify-between font-bold text-white">
             <span>Total</span>
-            <span className="text-lg">{formatPrice(total)}</span>
+            <span className="text-lg text-green-400">{formatPrice(total)}</span>
           </div>
         </div>
 
         {/* Checkout Button */}
         <Button 
           onClick={onCheckout}
-          className="w-full bg-green-600 hover:bg-green-700 text-white py-3"
+          disabled={!isStoreOpen}
+          className={`w-full py-3 text-lg font-bold ${isStoreOpen ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-600 cursor-not-allowed'} text-white`}
           size="lg"
         >
-          Finalizar Pedido - {formatPrice(total)}
+          {isStoreOpen ? `Finalizar Pedido - ${formatPrice(total)}` : 'Loja Fechada'}
         </Button>
 
         {/* Payment Methods */}
         <div className="text-center">
-          <p className="text-xs text-gray-500 mb-2">Formas de pagamento:</p>
+          <p className="text-xs text-orange-300 mb-2">Formas de pagamento:</p>
           <div className="flex justify-center gap-2">
-            <Badge variant="outline" className="text-xs">PIX</Badge>
-            <Badge variant="outline" className="text-xs">Cartão</Badge>
-            <Badge variant="outline" className="text-xs">Dinheiro</Badge>
+            <Badge variant="outline" className="text-xs border-orange-300 text-orange-300">PIX</Badge>
+            <Badge variant="outline" className="text-xs border-orange-300 text-orange-300">Cartão</Badge>
+            <Badge variant="outline" className="text-xs border-orange-300 text-orange-300">Dinheiro</Badge>
           </div>
         </div>
       </CardContent>

@@ -1361,6 +1361,41 @@ export type Database = {
           },
         ]
       }
+      order_modifications: {
+        Row: {
+          created_at: string | null
+          id: string
+          ingredient_name: string
+          modification_type: string
+          order_item_id: string | null
+          price_change: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          ingredient_name: string
+          modification_type: string
+          order_item_id?: string | null
+          price_change?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          ingredient_name?: string
+          modification_type?: string
+          order_item_id?: string | null
+          price_change?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_modifications_order_item_id_fkey"
+            columns: ["order_item_id"]
+            isOneToOne: false
+            referencedRelation: "order_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       orders: {
         Row: {
           confirmed_at: string | null
