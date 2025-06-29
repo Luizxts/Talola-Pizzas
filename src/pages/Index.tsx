@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Clock, Star, MapPin, Phone, ChefHat, Truck, ShoppingCart, Sparkles } from 'lucide-react';
+import { Clock, Star, MapPin, Phone, ChefHat, Truck, ShoppingCart, Sparkles, Settings } from 'lucide-react';
 import { toast } from 'sonner';
 import { useStoreStatus } from '@/hooks/useStoreStatus';
 import StoreStatusBanner from '@/components/StoreStatusBanner';
@@ -113,11 +113,11 @@ const Index = () => {
               </Badge>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center px-4">
+            <div className="flex flex-col items-center gap-4 sm:gap-6 justify-center px-4">
               <Button
                 onClick={handleOrderClick}
                 disabled={!isOpen}
-                className={`px-8 sm:px-12 py-4 sm:py-6 text-lg sm:text-xl font-bold rounded-2xl transition-all duration-300 ${
+                className={`px-12 sm:px-16 py-6 sm:py-8 text-xl sm:text-2xl font-bold rounded-2xl transition-all duration-300 ${
                   isOpen 
                     ? 'bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white shadow-2xl hover:shadow-orange-500/25 hover:scale-105' 
                     : 'bg-slate-700 cursor-not-allowed text-slate-400'
@@ -125,22 +125,23 @@ const Index = () => {
                 size="lg"
               >
                 {isOpen ? (
-                  <div className="flex items-center gap-2 sm:gap-3">
-                    <ShoppingCart className="h-5 w-5 sm:h-6 sm:w-6" />
-                    <span className="text-sm sm:text-base">FAZER PEDIDO AGORA</span>
+                  <div className="flex items-center gap-3 sm:gap-4">
+                    <ShoppingCart className="h-6 w-6 sm:h-8 sm:w-8" />
+                    <span className="text-lg sm:text-xl">FAZER PEDIDO AGORA</span>
                   </div>
                 ) : (
                   'LOJA FECHADA'
                 )}
               </Button>
-              
+
+              {/* Acesso para Funcionários */}
               <Button
-                onClick={() => navigate('/menu')}
-                variant="outline"
-                className="px-8 sm:px-12 py-4 sm:py-6 text-lg sm:text-xl font-bold rounded-2xl border-2 border-orange-400/50 text-orange-300 hover:bg-orange-500/10 hover:border-orange-400 transition-all duration-300 backdrop-blur-sm"
-                size="lg"
+                onClick={() => navigate('/funcionario-login')}
+                variant="ghost"
+                className="text-orange-300/70 hover:text-orange-300 text-sm hover:bg-orange-500/10 transition-all duration-300"
               >
-                VER CARDÁPIO
+                <Settings className="h-4 w-4 mr-2" />
+                Acesso Funcionários
               </Button>
             </div>
           </div>
