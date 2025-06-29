@@ -98,16 +98,16 @@ const OrderTracking = () => {
 
   if (!order) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
         <Card className="max-w-md mx-auto bg-gradient-to-br from-slate-900/95 to-slate-800/95 backdrop-blur-xl border-slate-700/50 shadow-2xl">
-          <CardContent className="p-8 text-center">
+          <CardContent className="p-6 sm:p-8 text-center">
             <div className="bg-red-500/20 p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
               <Package className="h-8 w-8 text-red-400" />
             </div>
-            <p className="text-white text-xl font-semibold mb-6">Pedido não encontrado</p>
+            <p className="text-white text-lg sm:text-xl font-semibold mb-6">Pedido não encontrado</p>
             <Button 
               onClick={() => navigate('/')} 
-              className="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white px-8 py-3 rounded-xl"
+              className="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white px-6 sm:px-8 py-3 rounded-xl w-full"
             >
               Voltar ao Início
             </Button>
@@ -210,51 +210,51 @@ const OrderTracking = () => {
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
       {/* Enhanced Header */}
       <header className="bg-gradient-to-r from-black/95 via-slate-900/95 to-black/95 backdrop-blur-xl shadow-2xl border-b border-slate-700/50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
           <div className="flex justify-between items-center">
-            <div className="flex items-center space-x-6">
+            <div className="flex items-center space-x-4 sm:space-x-6">
               <div className="relative">
                 <div className="absolute inset-0 bg-gradient-to-r from-orange-500 to-red-500 rounded-full blur-lg opacity-50"></div>
-                <div className="relative bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-full w-16 h-16 flex items-center justify-center text-2xl font-bold shadow-lg">
+                <div className="relative bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-full w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center text-xl sm:text-2xl font-bold shadow-lg">
                   T
                 </div>
               </div>
               <div>
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-orange-400 to-red-400 bg-clip-text text-transparent">
+                <h1 className="text-xl sm:text-3xl font-bold bg-gradient-to-r from-orange-400 to-red-400 bg-clip-text text-transparent">
                   ACOMPANHAR PEDIDO
                 </h1>
-                <p className="text-orange-300 text-lg">Pedido #{order.id.slice(-8)}</p>
+                <p className="text-orange-300 text-sm sm:text-lg">Pedido #{order.id.slice(-8)}</p>
               </div>
             </div>
             <Button
               onClick={() => navigate('/')}
               variant="ghost"
-              className="text-white hover:text-orange-300 hover:bg-orange-500/10 transition-all duration-200"
+              className="text-white hover:text-orange-300 hover:bg-orange-500/10 transition-all duration-200 p-2 sm:p-3"
             >
-              <Home className="h-5 w-5 mr-2" />
-              Início
+              <Home className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">Início</span>
             </Button>
           </div>
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-6xl mx-auto space-y-8">
+      <div className="container mx-auto px-4 py-4 sm:py-8">
+        <div className="max-w-6xl mx-auto space-y-6 sm:space-y-8">
           {/* Status Principal */}
           <Card className={`bg-gradient-to-br from-slate-900/95 to-slate-800/95 backdrop-blur-xl border-slate-700/50 shadow-2xl ${statusInfo.borderColor}`}>
-            <CardContent className="p-8 text-center">
-              <div className={`${statusInfo.bgColor} rounded-full w-32 h-32 flex items-center justify-center mx-auto mb-8 border-2 ${statusInfo.borderColor}`}>
-                <IconComponent className={`h-16 w-16 ${statusInfo.color}`} />
+            <CardContent className="p-6 sm:p-8 text-center">
+              <div className={`${statusInfo.bgColor} rounded-full w-24 h-24 sm:w-32 sm:h-32 flex items-center justify-center mx-auto mb-6 sm:mb-8 border-2 ${statusInfo.borderColor}`}>
+                <IconComponent className={`h-12 w-12 sm:h-16 sm:w-16 ${statusInfo.color}`} />
               </div>
-              <h2 className={`text-4xl font-bold mb-4 ${statusInfo.color}`}>
+              <h2 className={`text-2xl sm:text-4xl font-bold mb-3 sm:mb-4 ${statusInfo.color}`}>
                 {statusInfo.text}
               </h2>
-              <p className="text-white text-xl mb-8 leading-relaxed">{statusInfo.description}</p>
+              <p className="text-white text-lg sm:text-xl mb-6 sm:mb-8 leading-relaxed px-2">{statusInfo.description}</p>
               
               {order.estimated_delivery_time && order.status !== 'completed' && (
-                <div className="bg-gradient-to-r from-orange-500/10 to-red-500/10 rounded-xl p-6 inline-block border border-orange-500/20">
-                  <p className="text-orange-300 text-lg font-semibold mb-2">Previsão de entrega:</p>
-                  <p className="text-white font-bold text-3xl">
+                <div className="bg-gradient-to-r from-orange-500/10 to-red-500/10 rounded-xl p-4 sm:p-6 inline-block border border-orange-500/20 max-w-sm mx-auto">
+                  <p className="text-orange-300 text-base sm:text-lg font-semibold mb-2">Previsão de entrega:</p>
+                  <p className="text-white font-bold text-2xl sm:text-3xl">
                     {new Date(order.estimated_delivery_time).toLocaleTimeString('pt-BR', {
                       hour: '2-digit',
                       minute: '2-digit'
@@ -265,10 +265,10 @@ const OrderTracking = () => {
 
               {/* Botão confirmar entrega quando status é delivering */}
               {order.status === 'delivering' && (
-                <div className="mt-8">
+                <div className="mt-6 sm:mt-8">
                   <Button
                     onClick={handleConfirmDelivery}
-                    className="bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 text-white px-12 py-4 text-xl font-bold rounded-xl shadow-lg hover:shadow-xl hover:shadow-green-500/25"
+                    className="bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 text-white px-8 sm:px-12 py-3 sm:py-4 text-lg sm:text-xl font-bold rounded-xl shadow-lg hover:shadow-xl hover:shadow-green-500/25 w-full sm:w-auto"
                     size="lg"
                   >
                     ✅ Confirmar Entrega
@@ -281,37 +281,37 @@ const OrderTracking = () => {
           {/* Timeline */}
           <Card className="bg-gradient-to-br from-slate-900/95 to-slate-800/95 backdrop-blur-xl border-slate-700/50 shadow-2xl">
             <CardHeader className="bg-gradient-to-r from-orange-500/10 to-red-500/10 border-b border-slate-700/50">
-              <CardTitle className="text-white text-2xl font-bold">Status do Pedido</CardTitle>
+              <CardTitle className="text-white text-xl sm:text-2xl font-bold">Status do Pedido</CardTitle>
             </CardHeader>
-            <CardContent className="p-8">
-              <div className="space-y-6">
+            <CardContent className="p-4 sm:p-8">
+              <div className="space-y-4 sm:space-y-6">
                 {steps.map((step, index) => {
                   const StepIcon = step.icon;
                   const isCompleted = index <= currentStepIndex;
                   const isCurrent = index === currentStepIndex;
                   
                   return (
-                    <div key={step.key} className="flex items-center space-x-6">
+                    <div key={step.key} className="flex items-center space-x-4 sm:space-x-6">
                       <div className={`
-                        w-16 h-16 rounded-full flex items-center justify-center border-2 transition-all duration-300
+                        w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center border-2 transition-all duration-300
                         ${isCompleted 
                           ? 'bg-gradient-to-r from-green-500 to-emerald-500 border-green-400 text-white shadow-lg' 
                           : 'bg-slate-800/50 border-slate-600 text-gray-400'
                         }
                         ${isCurrent ? 'ring-4 ring-green-500/30 scale-110 animate-pulse' : ''}
                       `}>
-                        <StepIcon className="h-8 w-8" />
+                        <StepIcon className="h-6 w-6 sm:h-8 sm:w-8" />
                       </div>
                       <div className="flex-1">
-                        <p className={`font-bold text-xl ${isCompleted ? 'text-white' : 'text-gray-400'}`}>
+                        <p className={`font-bold text-lg sm:text-xl ${isCompleted ? 'text-white' : 'text-gray-400'}`}>
                           {step.text}
                         </p>
                         {isCurrent && (
-                          <p className="text-green-400 text-sm font-semibold animate-pulse">● Em andamento</p>
+                          <p className="text-green-400 text-xs sm:text-sm font-semibold animate-pulse">● Em andamento</p>
                         )}
                       </div>
                       {isCompleted && (
-                        <CheckCircle2 className="h-8 w-8 text-green-400" />
+                        <CheckCircle2 className="h-6 w-6 sm:h-8 sm:w-8 text-green-400" />
                       )}
                     </div>
                   );
@@ -321,60 +321,60 @@ const OrderTracking = () => {
           </Card>
 
           {/* Detalhes do Pedido */}
-          <div className="grid md:grid-cols-2 gap-8">
+          <div className="grid md:grid-cols-2 gap-6 sm:gap-8">
             <Card className="bg-gradient-to-br from-slate-900/95 to-slate-800/95 backdrop-blur-xl border-slate-700/50 shadow-2xl">
               <CardHeader className="bg-gradient-to-r from-orange-500/10 to-red-500/10 border-b border-slate-700/50">
-                <CardTitle className="text-white text-xl font-bold">Detalhes do Pedido</CardTitle>
+                <CardTitle className="text-white text-lg sm:text-xl font-bold">Detalhes do Pedido</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-6 p-6">
-                <div className="flex justify-between items-center p-4 bg-slate-800/50 rounded-lg border border-slate-700/50">
-                  <span className="text-orange-300 font-semibold">Pedido:</span>
-                  <span className="text-white font-mono font-bold">#{order.id.slice(-8)}</span>
+              <CardContent className="space-y-4 sm:space-y-6 p-4 sm:p-6">
+                <div className="flex justify-between items-center p-3 sm:p-4 bg-slate-800/50 rounded-lg border border-slate-700/50">
+                  <span className="text-orange-300 font-semibold text-sm sm:text-base">Pedido:</span>
+                  <span className="text-white font-mono font-bold text-sm sm:text-base">#{order.id.slice(-8)}</span>
                 </div>
-                <div className="flex justify-between items-center p-4 bg-slate-800/50 rounded-lg border border-slate-700/50">
-                  <span className="text-orange-300 font-semibold">Status:</span>
+                <div className="flex justify-between items-center p-3 sm:p-4 bg-slate-800/50 rounded-lg border border-slate-700/50">
+                  <span className="text-orange-300 font-semibold text-sm sm:text-base">Status:</span>
                   <OrderStatus status={order.status} size="sm" />
                 </div>
-                <div className="flex justify-between items-center p-4 bg-slate-800/50 rounded-lg border border-slate-700/50">
-                  <span className="text-orange-300 font-semibold">Pagamento:</span>
+                <div className="flex justify-between items-center p-3 sm:p-4 bg-slate-800/50 rounded-lg border border-slate-700/50">
+                  <span className="text-orange-300 font-semibold text-sm sm:text-base">Pagamento:</span>
                   <Badge className={
                     order.payment_status === 'paid' 
-                      ? 'bg-gradient-to-r from-green-600 to-green-500 text-white' 
-                      : 'bg-gradient-to-r from-yellow-600 to-yellow-500 text-white'
+                      ? 'bg-gradient-to-r from-green-600 to-green-500 text-white text-xs sm:text-sm' 
+                      : 'bg-gradient-to-r from-yellow-600 to-yellow-500 text-white text-xs sm:text-sm'
                   }>
                     {order.payment_status === 'paid' ? '✅ Pago' : '⏳ Pendente'}
                   </Badge>
                 </div>
-                <div className="flex justify-between items-center p-4 bg-gradient-to-r from-green-500/10 to-emerald-500/10 rounded-lg border border-green-500/30">
-                  <span className="text-white font-bold text-xl">Total:</span>
-                  <span className="text-green-400 font-bold text-2xl">{formatPrice(order.total)}</span>
+                <div className="flex justify-between items-center p-3 sm:p-4 bg-gradient-to-r from-green-500/10 to-emerald-500/10 rounded-lg border border-green-500/30">
+                  <span className="text-white font-bold text-lg sm:text-xl">Total:</span>
+                  <span className="text-green-400 font-bold text-xl sm:text-2xl">{formatPrice(order.total)}</span>
                 </div>
               </CardContent>
             </Card>
 
             <Card className="bg-gradient-to-br from-slate-900/95 to-slate-800/95 backdrop-blur-xl border-slate-700/50 shadow-2xl">
               <CardHeader className="bg-gradient-to-r from-orange-500/10 to-red-500/10 border-b border-slate-700/50">
-                <CardTitle className="text-white text-xl font-bold">Contato e Ações</CardTitle>
+                <CardTitle className="text-white text-lg sm:text-xl font-bold">Contato e Ações</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-6 p-6">
-                <div className="p-4 bg-slate-800/50 rounded-lg border border-slate-700/50">
-                  <p className="text-orange-300 text-sm font-semibold mb-2">Endereço de entrega:</p>
-                  <p className="text-white leading-relaxed">{order.customer_address}</p>
+              <CardContent className="space-y-4 sm:space-y-6 p-4 sm:p-6">
+                <div className="p-3 sm:p-4 bg-slate-800/50 rounded-lg border border-slate-700/50">
+                  <p className="text-orange-300 text-xs sm:text-sm font-semibold mb-2">Endereço de entrega:</p>
+                  <p className="text-white leading-relaxed text-sm sm:text-base">{order.customer_address}</p>
                 </div>
                 
-                <div className="space-y-4">
+                <div className="space-y-3 sm:space-y-4">
                   <Button
                     onClick={() => window.open(whatsappUrl, '_blank')}
-                    className="w-full bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 text-white py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl hover:shadow-green-500/25"
+                    className="w-full bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 text-white py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl hover:shadow-green-500/25 text-sm sm:text-base"
                   >
-                    <MessageCircle className="h-5 w-5 mr-2" />
+                    <MessageCircle className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
                     Contatar no WhatsApp
                   </Button>
                   
                   <Button
                     onClick={() => navigate('/menu')}
                     variant="outline"
-                    className="w-full border-orange-400/50 text-orange-300 hover:bg-orange-500/10 hover:border-orange-400 py-3 rounded-xl font-semibold transition-all duration-300"
+                    className="w-full border-orange-400/50 text-orange-300 hover:bg-orange-500/10 hover:border-orange-400 py-3 rounded-xl font-semibold transition-all duration-300 text-sm sm:text-base"
                   >
                     🍕 Fazer Novo Pedido
                   </Button>

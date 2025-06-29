@@ -199,31 +199,31 @@ const Menu = () => {
 
       {/* Enhanced Header */}
       <header className="bg-gradient-to-r from-black/95 via-slate-900/95 to-black/95 backdrop-blur-xl shadow-2xl sticky top-0 z-50 border-b border-slate-700/50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
           <div className="flex justify-between items-center">
-            <div className="flex items-center space-x-6">
+            <div className="flex items-center space-x-4 sm:space-x-6">
               <Button
                 variant="ghost"
                 onClick={() => navigate('/')}
-                className="text-white hover:text-orange-300 hover:bg-orange-500/10 transition-all duration-200"
+                className="text-white hover:text-orange-300 hover:bg-orange-500/10 transition-all duration-200 p-2 sm:p-3"
               >
-                <ArrowLeft className="h-5 w-5 mr-2" />
-                Voltar
+                <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Voltar</span>
               </Button>
               
-              <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2 sm:space-x-4">
                 <div className="relative">
                   <div className="absolute inset-0 bg-gradient-to-r from-orange-500 to-red-500 rounded-full blur-lg opacity-50"></div>
-                  <div className="relative bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-full w-16 h-16 flex items-center justify-center text-3xl font-bold shadow-lg">
+                  <div className="relative bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-full w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center text-xl sm:text-3xl font-bold shadow-lg">
                     T
                   </div>
                 </div>
                 <div>
-                  <h1 className="text-3xl font-bold bg-gradient-to-r from-orange-400 to-red-400 bg-clip-text text-transparent">
-                    CARDÁPIO ESPECIAL
+                  <h1 className="text-xl sm:text-3xl font-bold bg-gradient-to-r from-orange-400 to-red-400 bg-clip-text text-transparent">
+                    CARDÁPIO TALOLA
                   </h1>
-                  <div className="flex items-center gap-2 text-sm">
-                    <Clock className="h-4 w-4" />
+                  <div className="flex items-center gap-2 text-xs sm:text-sm">
+                    <Clock className="h-3 w-3 sm:h-4 sm:w-4" />
                     <span className={`font-semibold ${isOpen ? 'text-green-400' : 'text-red-400'}`}>
                       {isOpen ? '🟢 Aberto até 00:00' : '🔴 Loja Fechada'}
                     </span>
@@ -232,31 +232,32 @@ const Menu = () => {
               </div>
             </div>
             
-            <div className="flex items-center space-x-4">
-              <Badge className={`px-6 py-3 text-lg font-bold ${isOpen ? 'bg-gradient-to-r from-orange-500 to-red-600' : 'bg-slate-700'} text-white shadow-lg`}>
-                <ShoppingCart className="h-5 w-5 mr-2" />
-                {cartItems.length} {cartItems.length === 1 ? 'item' : 'itens'}
+            <div className="flex items-center space-x-2 sm:space-x-4">
+              <Badge className={`px-3 sm:px-6 py-2 sm:py-3 text-sm sm:text-lg font-bold ${isOpen ? 'bg-gradient-to-r from-orange-500 to-red-600' : 'bg-slate-700'} text-white shadow-lg`}>
+                <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">{cartItems.length} {cartItems.length === 1 ? 'item' : 'itens'}</span>
+                <span className="sm:hidden">{cartItems.length}</span>
               </Badge>
             </div>
           </div>
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-8">
-        <div className="grid lg:grid-cols-4 gap-8">
+      <div className="container mx-auto px-4 py-4 sm:py-8">
+        <div className="grid lg:grid-cols-4 gap-4 sm:gap-8">
           {/* Enhanced Menu Content */}
           <div className="lg:col-span-3">
             <Tabs defaultValue={categories[0]?.id} className="w-full">
-              <TabsList className="grid w-full grid-cols-3 mb-8 bg-gradient-to-r from-slate-800/80 to-slate-700/80 backdrop-blur-xl border border-slate-700/50 h-14">
+              <TabsList className="grid w-full grid-cols-3 mb-6 sm:mb-8 bg-gradient-to-r from-slate-800/80 to-slate-700/80 backdrop-blur-xl border border-slate-700/50 h-12 sm:h-14">
                 {categories.map((category) => (
                   <TabsTrigger 
                     key={category.id} 
                     value={category.id}
-                    className="text-white font-semibold text-base data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-500 data-[state=active]:to-red-600 data-[state=active]:text-white transition-all duration-300 rounded-lg"
+                    className="text-white font-semibold text-sm sm:text-base data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-500 data-[state=active]:to-red-600 data-[state=active]:text-white transition-all duration-300 rounded-lg px-2 sm:px-4"
                   >
-                    <div className="flex items-center space-x-2">
-                      {category.name === 'Combos e Promoções' && <Sparkles className="h-4 w-4" />}
-                      <span>{category.name}</span>
+                    <div className="flex items-center space-x-1 sm:space-x-2">
+                      {category.name === 'Combos e Promoções' && <Sparkles className="h-3 w-3 sm:h-4 sm:w-4" />}
+                      <span className="text-xs sm:text-sm">{category.name}</span>
                     </div>
                   </TabsTrigger>
                 ))}
@@ -265,16 +266,16 @@ const Menu = () => {
               {categories.map((category) => (
                 <TabsContent key={category.id} value={category.id}>
                   <Card className="bg-gradient-to-br from-slate-900/95 to-slate-800/95 backdrop-blur-xl border-slate-700/50 shadow-2xl">
-                    <CardHeader className="bg-gradient-to-r from-orange-500/10 to-red-500/10 border-b border-slate-700/50">
-                      <CardTitle className="text-4xl font-bold bg-gradient-to-r from-orange-400 to-red-400 bg-clip-text text-transparent">
+                    <CardHeader className="bg-gradient-to-r from-orange-500/10 to-red-500/10 border-b border-slate-700/50 p-4 sm:p-6">
+                      <CardTitle className="text-2xl sm:text-4xl font-bold bg-gradient-to-r from-orange-400 to-red-400 bg-clip-text text-transparent">
                         {category.name}
                       </CardTitle>
                       {category.description && (
-                        <p className="text-slate-300 text-lg leading-relaxed">{category.description}</p>
+                        <p className="text-slate-300 text-base sm:text-lg leading-relaxed">{category.description}</p>
                       )}
                     </CardHeader>
-                    <CardContent className="p-8">
-                      <div className="grid md:grid-cols-2 gap-8">
+                    <CardContent className="p-4 sm:p-8">
+                      <div className="grid md:grid-cols-2 gap-4 sm:gap-8">
                         {products[category.id]?.map((product) => (
                           <MenuCard
                             key={product.id}
