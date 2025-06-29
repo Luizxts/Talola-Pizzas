@@ -98,11 +98,17 @@ const OrderTracking = () => {
 
   if (!order) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-orange-500 via-red-600 to-pink-700 flex items-center justify-center">
-        <Card className="max-w-md mx-auto bg-black/60 backdrop-blur-sm border-white/20">
-          <CardContent className="p-6 text-center">
-            <p className="text-white mb-4">Pedido não encontrado</p>
-            <Button onClick={() => navigate('/')} className="bg-red-600 hover:bg-red-700">
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
+        <Card className="max-w-md mx-auto bg-gradient-to-br from-slate-900/95 to-slate-800/95 backdrop-blur-xl border-slate-700/50 shadow-2xl">
+          <CardContent className="p-8 text-center">
+            <div className="bg-red-500/20 p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+              <Package className="h-8 w-8 text-red-400" />
+            </div>
+            <p className="text-white text-xl font-semibold mb-6">Pedido não encontrado</p>
+            <Button 
+              onClick={() => navigate('/')} 
+              className="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white px-8 py-3 rounded-xl"
+            >
               Voltar ao Início
             </Button>
           </CardContent>
@@ -119,7 +125,8 @@ const OrderTracking = () => {
           text: 'Pedido Recebido',
           description: 'Aguardando confirmação do restaurante',
           color: 'text-yellow-400',
-          bgColor: 'bg-yellow-400/20'
+          bgColor: 'bg-yellow-400/20',
+          borderColor: 'border-yellow-400/50'
         };
       case 'confirmed':
         return {
@@ -127,7 +134,8 @@ const OrderTracking = () => {
           text: 'Pedido Confirmado',
           description: 'Iniciando preparo da sua pizza',
           color: 'text-blue-400',
-          bgColor: 'bg-blue-400/20'
+          bgColor: 'bg-blue-400/20',
+          borderColor: 'border-blue-400/50'
         };
       case 'preparing':
         return {
@@ -135,7 +143,8 @@ const OrderTracking = () => {
           text: 'Preparando',
           description: 'Sua pizza está sendo preparada com carinho',
           color: 'text-orange-400',
-          bgColor: 'bg-orange-400/20'
+          bgColor: 'bg-orange-400/20',
+          borderColor: 'border-orange-400/50'
         };
       case 'ready':
         return {
@@ -143,7 +152,8 @@ const OrderTracking = () => {
           text: 'Pronto para Entrega',
           description: 'Pizza pronta, saindo para entrega',
           color: 'text-purple-400',
-          bgColor: 'bg-purple-400/20'
+          bgColor: 'bg-purple-400/20',
+          borderColor: 'border-purple-400/50'
         };
       case 'delivering':
         return {
@@ -151,15 +161,17 @@ const OrderTracking = () => {
           text: 'Saindo para Entrega',
           description: 'A caminho do seu endereço',
           color: 'text-indigo-400',
-          bgColor: 'bg-indigo-400/20'
+          bgColor: 'bg-indigo-400/20',
+          borderColor: 'border-indigo-400/50'
         };
       case 'completed':
         return {
           icon: CheckCircle2,
           text: 'Pedido Entregue',
           description: 'Entregue com sucesso!',
-          color: 'text-green-500',
-          bgColor: 'bg-green-500/20'
+          color: 'text-green-400',
+          bgColor: 'bg-green-400/20',
+          borderColor: 'border-green-400/50'
         };
       default:
         return {
@@ -167,7 +179,8 @@ const OrderTracking = () => {
           text: 'Processando',
           description: 'Verificando status do pedido',
           color: 'text-gray-400',
-          bgColor: 'bg-gray-400/20'
+          bgColor: 'bg-gray-400/20',
+          borderColor: 'border-gray-400/50'
         };
     }
   };
@@ -194,24 +207,29 @@ const OrderTracking = () => {
   const currentStepIndex = steps.findIndex(step => step.key === order.status);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-500 via-red-600 to-pink-700">
-      {/* Header */}
-      <header className="bg-black/90 backdrop-blur-sm shadow-xl">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+      {/* Enhanced Header */}
+      <header className="bg-gradient-to-r from-black/95 via-slate-900/95 to-black/95 backdrop-blur-xl shadow-2xl border-b border-slate-700/50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex justify-between items-center">
-            <div className="flex items-center space-x-4">
-              <div className="bg-red-600 text-white rounded-full w-12 h-12 flex items-center justify-center text-2xl font-bold">
-                T
+            <div className="flex items-center space-x-6">
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-orange-500 to-red-500 rounded-full blur-lg opacity-50"></div>
+                <div className="relative bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-full w-16 h-16 flex items-center justify-center text-2xl font-bold shadow-lg">
+                  T
+                </div>
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-white">ACOMPANHAR PEDIDO</h1>
-                <p className="text-orange-300">Pedido #{order.id.slice(-8)}</p>
+                <h1 className="text-3xl font-bold bg-gradient-to-r from-orange-400 to-red-400 bg-clip-text text-transparent">
+                  ACOMPANHAR PEDIDO
+                </h1>
+                <p className="text-orange-300 text-lg">Pedido #{order.id.slice(-8)}</p>
               </div>
             </div>
             <Button
               onClick={() => navigate('/')}
               variant="ghost"
-              className="text-white hover:text-orange-300"
+              className="text-white hover:text-orange-300 hover:bg-orange-500/10 transition-all duration-200"
             >
               <Home className="h-5 w-5 mr-2" />
               Início
@@ -221,22 +239,22 @@ const OrderTracking = () => {
       </header>
 
       <div className="container mx-auto px-4 py-8">
-        <div className="max-w-4xl mx-auto space-y-8">
+        <div className="max-w-6xl mx-auto space-y-8">
           {/* Status Principal */}
-          <Card className="bg-black/60 backdrop-blur-sm border-white/20">
+          <Card className={`bg-gradient-to-br from-slate-900/95 to-slate-800/95 backdrop-blur-xl border-slate-700/50 shadow-2xl ${statusInfo.borderColor}`}>
             <CardContent className="p-8 text-center">
-              <div className={`${statusInfo.bgColor} rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-6`}>
-                <IconComponent className={`h-12 w-12 ${statusInfo.color}`} />
+              <div className={`${statusInfo.bgColor} rounded-full w-32 h-32 flex items-center justify-center mx-auto mb-8 border-2 ${statusInfo.borderColor}`}>
+                <IconComponent className={`h-16 w-16 ${statusInfo.color}`} />
               </div>
-              <h2 className={`text-3xl font-bold mb-2 ${statusInfo.color}`}>
+              <h2 className={`text-4xl font-bold mb-4 ${statusInfo.color}`}>
                 {statusInfo.text}
               </h2>
-              <p className="text-white text-lg mb-6">{statusInfo.description}</p>
+              <p className="text-white text-xl mb-8 leading-relaxed">{statusInfo.description}</p>
               
               {order.estimated_delivery_time && order.status !== 'completed' && (
-                <div className="bg-white/10 rounded-lg p-4 inline-block">
-                  <p className="text-orange-200">Previsão de entrega:</p>
-                  <p className="text-white font-bold text-xl">
+                <div className="bg-gradient-to-r from-orange-500/10 to-red-500/10 rounded-xl p-6 inline-block border border-orange-500/20">
+                  <p className="text-orange-300 text-lg font-semibold mb-2">Previsão de entrega:</p>
+                  <p className="text-white font-bold text-3xl">
                     {new Date(order.estimated_delivery_time).toLocaleTimeString('pt-BR', {
                       hour: '2-digit',
                       minute: '2-digit'
@@ -247,10 +265,10 @@ const OrderTracking = () => {
 
               {/* Botão confirmar entrega quando status é delivering */}
               {order.status === 'delivering' && (
-                <div className="mt-6">
+                <div className="mt-8">
                   <Button
                     onClick={handleConfirmDelivery}
-                    className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 text-lg"
+                    className="bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 text-white px-12 py-4 text-xl font-bold rounded-xl shadow-lg hover:shadow-xl hover:shadow-green-500/25"
                     size="lg"
                   >
                     ✅ Confirmar Entrega
@@ -261,11 +279,11 @@ const OrderTracking = () => {
           </Card>
 
           {/* Timeline */}
-          <Card className="bg-black/60 backdrop-blur-sm border-white/20">
-            <CardHeader>
-              <CardTitle className="text-white">Status do Pedido</CardTitle>
+          <Card className="bg-gradient-to-br from-slate-900/95 to-slate-800/95 backdrop-blur-xl border-slate-700/50 shadow-2xl">
+            <CardHeader className="bg-gradient-to-r from-orange-500/10 to-red-500/10 border-b border-slate-700/50">
+              <CardTitle className="text-white text-2xl font-bold">Status do Pedido</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-8">
               <div className="space-y-6">
                 {steps.map((step, index) => {
                   const StepIcon = step.icon;
@@ -273,27 +291,27 @@ const OrderTracking = () => {
                   const isCurrent = index === currentStepIndex;
                   
                   return (
-                    <div key={step.key} className="flex items-center space-x-4">
+                    <div key={step.key} className="flex items-center space-x-6">
                       <div className={`
-                        w-12 h-12 rounded-full flex items-center justify-center border-2 transition-all
+                        w-16 h-16 rounded-full flex items-center justify-center border-2 transition-all duration-300
                         ${isCompleted 
-                          ? 'bg-green-500 border-green-500 text-white' 
-                          : 'bg-white/10 border-white/20 text-gray-400'
+                          ? 'bg-gradient-to-r from-green-500 to-emerald-500 border-green-400 text-white shadow-lg' 
+                          : 'bg-slate-800/50 border-slate-600 text-gray-400'
                         }
-                        ${isCurrent ? 'ring-4 ring-green-500/30 scale-110' : ''}
+                        ${isCurrent ? 'ring-4 ring-green-500/30 scale-110 animate-pulse' : ''}
                       `}>
-                        <StepIcon className="h-6 w-6" />
+                        <StepIcon className="h-8 w-8" />
                       </div>
                       <div className="flex-1">
-                        <p className={`font-medium text-lg ${isCompleted ? 'text-white' : 'text-gray-400'}`}>
+                        <p className={`font-bold text-xl ${isCompleted ? 'text-white' : 'text-gray-400'}`}>
                           {step.text}
                         </p>
                         {isCurrent && (
-                          <p className="text-green-400 text-sm animate-pulse">● Em andamento</p>
+                          <p className="text-green-400 text-sm font-semibold animate-pulse">● Em andamento</p>
                         )}
                       </div>
                       {isCompleted && (
-                        <CheckCircle2 className="h-6 w-6 text-green-500" />
+                        <CheckCircle2 className="h-8 w-8 text-green-400" />
                       )}
                     </div>
                   );
@@ -304,59 +322,59 @@ const OrderTracking = () => {
 
           {/* Detalhes do Pedido */}
           <div className="grid md:grid-cols-2 gap-8">
-            <Card className="bg-black/60 backdrop-blur-sm border-white/20">
-              <CardHeader>
-                <CardTitle className="text-white">Detalhes do Pedido</CardTitle>
+            <Card className="bg-gradient-to-br from-slate-900/95 to-slate-800/95 backdrop-blur-xl border-slate-700/50 shadow-2xl">
+              <CardHeader className="bg-gradient-to-r from-orange-500/10 to-red-500/10 border-b border-slate-700/50">
+                <CardTitle className="text-white text-xl font-bold">Detalhes do Pedido</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex justify-between">
-                  <span className="text-orange-200">Pedido:</span>
-                  <span className="text-white font-mono">#{order.id.slice(-8)}</span>
+              <CardContent className="space-y-6 p-6">
+                <div className="flex justify-between items-center p-4 bg-slate-800/50 rounded-lg border border-slate-700/50">
+                  <span className="text-orange-300 font-semibold">Pedido:</span>
+                  <span className="text-white font-mono font-bold">#{order.id.slice(-8)}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-orange-200">Status:</span>
+                <div className="flex justify-between items-center p-4 bg-slate-800/50 rounded-lg border border-slate-700/50">
+                  <span className="text-orange-300 font-semibold">Status:</span>
                   <OrderStatus status={order.status} size="sm" />
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-orange-200">Pagamento:</span>
+                <div className="flex justify-between items-center p-4 bg-slate-800/50 rounded-lg border border-slate-700/50">
+                  <span className="text-orange-300 font-semibold">Pagamento:</span>
                   <Badge className={
                     order.payment_status === 'paid' 
-                      ? 'bg-green-600 text-white' 
-                      : 'bg-yellow-600 text-white'
+                      ? 'bg-gradient-to-r from-green-600 to-green-500 text-white' 
+                      : 'bg-gradient-to-r from-yellow-600 to-yellow-500 text-white'
                   }>
                     {order.payment_status === 'paid' ? '✅ Pago' : '⏳ Pendente'}
                   </Badge>
                 </div>
-                <div className="flex justify-between font-bold text-lg pt-2 border-t border-white/20">
-                  <span className="text-white">Total:</span>
-                  <span className="text-green-400">{formatPrice(order.total)}</span>
+                <div className="flex justify-between items-center p-4 bg-gradient-to-r from-green-500/10 to-emerald-500/10 rounded-lg border border-green-500/30">
+                  <span className="text-white font-bold text-xl">Total:</span>
+                  <span className="text-green-400 font-bold text-2xl">{formatPrice(order.total)}</span>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-black/60 backdrop-blur-sm border-white/20">
-              <CardHeader>
-                <CardTitle className="text-white">Contato e Ações</CardTitle>
+            <Card className="bg-gradient-to-br from-slate-900/95 to-slate-800/95 backdrop-blur-xl border-slate-700/50 shadow-2xl">
+              <CardHeader className="bg-gradient-to-r from-orange-500/10 to-red-500/10 border-b border-slate-700/50">
+                <CardTitle className="text-white text-xl font-bold">Contato e Ações</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <p className="text-orange-200 text-sm">Endereço de entrega:</p>
-                  <p className="text-white">{order.customer_address}</p>
+              <CardContent className="space-y-6 p-6">
+                <div className="p-4 bg-slate-800/50 rounded-lg border border-slate-700/50">
+                  <p className="text-orange-300 text-sm font-semibold mb-2">Endereço de entrega:</p>
+                  <p className="text-white leading-relaxed">{order.customer_address}</p>
                 </div>
                 
-                <div className="space-y-3">
+                <div className="space-y-4">
                   <Button
                     onClick={() => window.open(whatsappUrl, '_blank')}
-                    className="w-full bg-green-600 hover:bg-green-700 text-white"
+                    className="w-full bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 text-white py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl hover:shadow-green-500/25"
                   >
-                    <MessageCircle className="h-4 w-4 mr-2" />
+                    <MessageCircle className="h-5 w-5 mr-2" />
                     Contatar no WhatsApp
                   </Button>
                   
                   <Button
                     onClick={() => navigate('/menu')}
                     variant="outline"
-                    className="w-full border-white/20 text-white hover:bg-white/10"
+                    className="w-full border-orange-400/50 text-orange-300 hover:bg-orange-500/10 hover:border-orange-400 py-3 rounded-xl font-semibold transition-all duration-300"
                   >
                     🍕 Fazer Novo Pedido
                   </Button>

@@ -1,319 +1,318 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
-import { Clock, Phone, MapPin, Star, ShoppingCart, Menu, X } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
+
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Clock, Star, MapPin, Phone, ChefHat, Truck, ShoppingCart, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import { useStoreStatus } from '@/hooks/useStoreStatus';
 import StoreStatusBanner from '@/components/StoreStatusBanner';
 
-interface Product {
-  id: string;
-  name: string;
-  description: string;
-  base_price: number;
-  image_url?: string;
-  category_id: string;
-}
-
-interface Category {
-  id: string;
-  name: string;
-  description?: string;
-}
-
 const Index = () => {
-  const { checkStoreInteraction, isOpen, getFormattedHours } = useStoreStatus();
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [products, setProducts] = useState<Record<string, Product[]>>({});
-  const [loading, setLoading] = useState(true);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const navigate = useNavigate();
+  const { isOpen } = useStoreStatus();
+  const [currentTime, setCurrentTime] = useState(new Date());
 
   useEffect(() => {
-    fetchMenuData();
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+
+    return () => clearInterval(timer);
   }, []);
 
-  const fetchMenuData = async () => {
-    try {
-      const { data: categoriesData, error: categoriesError } = await supabase
-        .from('categories')
-        .select('*')
-        .eq('is_active', true)
-        .order('display_order');
-
-      if (categoriesError) throw categoriesError;
-
-      const { data: productsData, error: productsError } = await supabase
-        .from('products')
-        .select('*')
-        .eq('is_active', true)
-        .order('display_order');
-
-      if (productsError) throw productsError;
-
-      const productsByCategory: Record<string, Product[]> = {};
-      productsData?.forEach(product => {
-        if (!productsByCategory[product.category_id]) {
-          productsByCategory[product.category_id] = [];
-        }
-        productsByCategory[product.category_id].push(product);
-      });
-
-      setCategories(categoriesData || []);
-      setProducts(productsByCategory);
-    } catch (error) {
-      console.error('Erro ao carregar dados:', error);
-      toast.error('Erro ao carregar o cardápio');
-    } finally {
-      setLoading(false);
-    }
+  const formatTime = (date: Date) => {
+    return date.toLocaleTimeString('pt-BR', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    });
   };
 
-  const formatPrice = (price: number) => {
-    return `R$ ${price.toFixed(2).replace('.', ',')}`;
-  };
-
-  const handleMenuClick = () => {
-    if (!checkStoreInteraction()) {
+  const handleOrderClick = () => {
+    if (!isOpen) {
+      toast.error('Loja fechada no momento. Volte durante o horário de funcionamento!');
       return;
     }
+    navigate('/menu');
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-orange-500 via-red-600 to-pink-700 flex items-center justify-center">
-        <div className="text-center text-white">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-white mx-auto mb-4"></div>
-          <p className="text-xl">Carregando...</p>
-        </div>
-      </div>
-    );
-  }
+  const features = [
+    {
+      icon: ChefHat,
+      title: 'Receitas Tradicionais',
+      description: 'Pizzas preparadas com ingredientes frescos e receitas especiais',
+      color: 'from-orange-500 to-red-500'
+    },
+    {
+      icon: Truck,
+      title: 'Entrega Rápida',
+      description: 'Delivery em até 30 minutos na sua região',
+      color: 'from-blue-500 to-purple-500'
+    },
+    {
+      icon: Star,
+      title: 'Qualidade Premium',
+      description: 'Ingredientes selecionados e massa artesanal',
+      color: 'from-green-500 to-emerald-500'
+    }
+  ];
+
+  const specialOffers = [
+    {
+      title: 'Pizza Margherita Especial',
+      description: 'Molho especial, mussarela de búfala, tomate cherry e manjericão fresco',
+      price: 'R$ 45,90',
+      originalPrice: 'R$ 52,90',
+      image: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=500&h=300&fit=crop'
+    },
+    {
+      title: 'Combo Família',
+      description: '2 pizzas grandes + refrigerante 2L + sobremesa',
+      price: 'R$ 89,90',
+      originalPrice: 'R$ 110,90',
+      image: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=500&h=300&fit=crop'
+    }
+  ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-500 via-red-600 to-pink-700">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
       <StoreStatusBanner />
 
-      {/* Header */}
-      <header className="bg-black/90 backdrop-blur-sm shadow-xl sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center space-x-2 sm:space-x-4">
-              <div className="bg-red-600 text-white rounded-full w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center text-2xl sm:text-3xl font-bold shadow-lg">
-                T
-              </div>
-              <div>
-                <h1 className="text-xl sm:text-3xl font-bold text-white">TALOLA PIZZA</h1>
-                <p className="text-orange-300 text-xs sm:text-sm">A melhor pizza da região!</p>
-              </div>
-            </div>
-            
-            {/* Desktop Menu */}
-            <div className="hidden md:flex items-center space-x-6">
-              <div className={`text-white text-center ${!isOpen ? 'opacity-50' : ''}`}>
-                <div className="flex items-center gap-2">
-                  <Clock className="h-5 w-5" />
-                  <span className={`font-bold ${isOpen ? 'text-green-400' : 'text-red-400'}`}>
-                    {isOpen ? 'ABERTO' : 'FECHADO'}
-                  </span>
+      {/* Enhanced Hero Section */}
+      <section className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-orange-500/20 via-red-500/20 to-pink-500/20 blur-3xl"></div>
+        <div className="relative container mx-auto px-4 py-20 text-center">
+          <div className="max-w-4xl mx-auto">
+            {/* Logo and Brand */}
+            <div className="flex justify-center mb-8">
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-orange-500 to-red-500 rounded-full blur-2xl opacity-50 animate-pulse"></div>
+                <div className="relative bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-full w-24 h-24 flex items-center justify-center text-4xl font-bold shadow-2xl">
+                  T
                 </div>
-                <p className="text-sm">{getFormattedHours()}</p>
               </div>
-              
-              <Link 
-                to="/menu" 
-                onClick={handleMenuClick}
-                className={`bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-bold transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center gap-2 ${!isOpen ? 'opacity-75 cursor-not-allowed' : ''}`}
-              >
-                <ShoppingCart className="h-5 w-5" />
-                VER CARDÁPIO
-              </Link>
-              
-              <Link 
-                to="/funcionario-login" 
-                className="text-orange-300 hover:text-white transition-colors text-sm"
-              >
-                Funcionário
-              </Link>
             </div>
 
-            {/* Mobile Menu Button */}
-            <div className="md:hidden">
+            <h1 className="text-6xl md:text-8xl font-bold mb-6 bg-gradient-to-r from-orange-400 via-red-400 to-pink-400 bg-clip-text text-transparent leading-tight">
+              TONY'S PIZZA
+            </h1>
+            
+            <p className="text-2xl md:text-3xl text-slate-300 mb-4 font-light">
+              Sabores Autênticos, Momentos Especiais
+            </p>
+            
+            <div className="flex items-center justify-center gap-4 mb-12">
+              <div className="flex items-center gap-2 bg-black/30 backdrop-blur-sm px-4 py-2 rounded-full border border-white/20">
+                <Clock className="h-5 w-5 text-orange-400" />
+                <span className="text-white font-medium">{formatTime(currentTime)}</span>
+              </div>
+              <Badge className={`px-6 py-3 text-lg font-bold ${isOpen ? 'bg-gradient-to-r from-green-500 to-emerald-500' : 'bg-gradient-to-r from-red-500 to-red-600'} text-white shadow-lg`}>
+                {isOpen ? '🟢 Aberto' : '🔴 Fechado'}
+              </Badge>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-6 justify-center">
               <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="text-white hover:bg-white/20"
+                onClick={handleOrderClick}
+                disabled={!isOpen}
+                className={`px-12 py-6 text-xl font-bold rounded-2xl transition-all duration-300 ${
+                  isOpen 
+                    ? 'bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white shadow-2xl hover:shadow-orange-500/25 hover:scale-105' 
+                    : 'bg-slate-700 cursor-not-allowed text-slate-400'
+                }`}
+                size="lg"
               >
-                {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+                {isOpen ? (
+                  <div className="flex items-center gap-3">
+                    <ShoppingCart className="h-6 w-6" />
+                    FAZER PEDIDO AGORA
+                  </div>
+                ) : (
+                  'LOJA FECHADA'
+                )}
+              </Button>
+              
+              <Button
+                onClick={() => navigate('/menu')}
+                variant="outline"
+                className="px-12 py-6 text-xl font-bold rounded-2xl border-2 border-orange-400/50 text-orange-300 hover:bg-orange-500/10 hover:border-orange-400 transition-all duration-300 backdrop-blur-sm"
+                size="lg"
+              >
+                VER CARDÁPIO
               </Button>
             </div>
           </div>
-
-          {/* Mobile Menu */}
-          {mobileMenuOpen && (
-            <div className="md:hidden mt-4 pb-4 border-t border-white/20 pt-4">
-              <div className="flex flex-col space-y-4">
-                <div className={`text-white text-center ${!isOpen ? 'opacity-50' : ''}`}>
-                  <div className="flex items-center justify-center gap-2">
-                    <Clock className="h-5 w-5" />
-                    <span className={`font-bold ${isOpen ? 'text-green-400' : 'text-red-400'}`}>
-                      {isOpen ? 'ABERTO' : 'FECHADO'}
-                    </span>
-                  </div>
-                  <p className="text-sm">{getFormattedHours()}</p>
-                </div>
-                
-                <Link 
-                  to="/menu" 
-                  onClick={handleMenuClick}
-                  className={`bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-bold transition-all duration-300 shadow-lg flex items-center justify-center gap-2 ${!isOpen ? 'opacity-75 cursor-not-allowed' : ''}`}
-                >
-                  <ShoppingCart className="h-5 w-5" />
-                  VER CARDÁPIO
-                </Link>
-                
-                <Link 
-                  to="/funcionario-login" 
-                  className="text-orange-300 hover:text-white transition-colors text-center"
-                >
-                  Área do Funcionário
-                </Link>
-              </div>
-            </div>
-          )}
-        </div>
-      </header>
-
-      {/* Hero Section */}
-      <section className="py-12 sm:py-20 text-center text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-black/60 backdrop-blur-sm rounded-3xl p-6 sm:p-12 shadow-2xl border border-white/10">
-            <h2 className="text-4xl sm:text-6xl font-extrabold mb-6 bg-gradient-to-r from-orange-400 to-red-400 bg-clip-text text-transparent">
-              PIZZA ARTESANAL
-            </h2>
-            <p className="text-lg sm:text-2xl mb-8 text-orange-100">
-              Feita com ingredientes frescos e muito amor
-            </p>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-8 mb-8 sm:mb-12">
-              <div className="bg-red-600/20 backdrop-blur-sm rounded-xl p-4 sm:p-6 border border-red-600/30">
-                <Star className="h-8 w-8 sm:h-12 sm:w-12 text-yellow-400 mx-auto mb-4" />
-                <h3 className="text-lg sm:text-xl font-bold mb-2">QUALIDADE PREMIUM</h3>
-                <p className="text-sm sm:text-base text-orange-100">Ingredientes selecionados e massa fresca</p>
-              </div>
-              <div className="bg-red-600/20 backdrop-blur-sm rounded-xl p-4 sm:p-6 border border-red-600/30">
-                <Clock className="h-8 w-8 sm:h-12 sm:w-12 text-green-400 mx-auto mb-4" />
-                <h3 className="text-lg sm:text-xl font-bold mb-2">ENTREGA RÁPIDA</h3>
-                <p className="text-sm sm:text-base text-orange-100">Até 40 minutos na sua casa</p>
-              </div>
-              <div className="bg-red-600/20 backdrop-blur-sm rounded-xl p-4 sm:p-6 border border-red-600/30">
-                <Phone className="h-8 w-8 sm:h-12 sm:w-12 text-blue-400 mx-auto mb-4" />
-                <h3 className="text-lg sm:text-xl font-bold mb-2">ATENDIMENTO</h3>
-                <p className="text-sm sm:text-base text-orange-100">(21) 97540-6476</p>
-              </div>
-            </div>
-
-            <Link 
-              to="/menu"
-              onClick={handleMenuClick}
-              className={`bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white px-8 sm:px-12 py-3 sm:py-4 rounded-full text-lg sm:text-xl font-bold transition-all duration-300 transform hover:scale-105 shadow-xl inline-block ${!isOpen ? 'opacity-75 cursor-not-allowed' : ''}`}
-            >
-              FAZER PEDIDO AGORA
-            </Link>
-          </div>
         </div>
       </section>
 
-      {/* Menu Preview */}
-      <section className="py-8 sm:py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl sm:text-4xl font-bold text-center text-white mb-8 sm:mb-12">
-            NOSSO CARDÁPIO
+      {/* Special Offers Section */}
+      <section className="py-20 container mx-auto px-4">
+        <div className="text-center mb-16">
+          <h2 className="text-5xl font-bold mb-6 bg-gradient-to-r from-orange-400 to-red-400 bg-clip-text text-transparent">
+            Ofertas Especiais
           </h2>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-8">
-            {categories.map((category) => (
-              <Card key={category.id} className={`bg-black/60 backdrop-blur-sm border-white/20 hover:bg-black/70 transition-all duration-300 transform hover:scale-105 ${!isOpen ? 'opacity-75' : ''}`}>
-                <CardContent className="p-4 sm:p-6 text-center">
-                  <h3 className="text-xl sm:text-2xl font-bold text-white mb-4">{category.name}</h3>
-                  <p className="text-orange-200 mb-4 sm:mb-6 text-sm sm:text-base">{category.description}</p>
-                  
-                  <div className="space-y-3 mb-4 sm:mb-6">
-                    {products[category.id]?.slice(0, 2).map((product) => (
-                      <div key={product.id} className="bg-white/10 rounded-lg p-3">
-                        <div className="flex justify-between items-center">
-                          <span className="text-white font-medium text-xs sm:text-sm">{product.name}</span>
-                          <Badge className="bg-red-600 text-white text-xs">
-                            {formatPrice(product.base_price)}
-                          </Badge>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  
-                  <Link to="/menu" onClick={handleMenuClick}>
-                    <Button className="w-full bg-red-600 hover:bg-red-700 text-white">
-                      Ver Todos
-                    </Button>
-                  </Link>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Contact Info */}
-      <section className="py-8 sm:py-16 bg-black/60 backdrop-blur-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 sm:gap-12">
-            <div className="text-white">
-              <h2 className="text-2xl sm:text-3xl font-bold mb-6">CONTATO</h2>
-              <div className="space-y-4">
-                <div className="flex items-center gap-3">
-                  <Phone className="h-5 w-5 sm:h-6 sm:w-6 text-red-400" />
-                  <span className="text-lg sm:text-xl">(21) 97540-6476</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <MapPin className="h-5 w-5 sm:h-6 sm:w-6 text-red-400" />
-                  <span className="text-sm sm:text-base">Irapiranga 11 Loja - Rocha Miranda</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Clock className="h-5 w-5 sm:h-6 sm:w-6 text-red-400" />
-                  <span className="text-sm sm:text-base">Funcionamos das {getFormattedHours()}</span>
-                </div>
-              </div>
-            </div>
-            
-            <div className="text-white">
-              <h2 className="text-2xl sm:text-3xl font-bold mb-6">SOBRE NÓS</h2>
-              <p className="text-orange-100 leading-relaxed text-sm sm:text-base">
-                A Talola Pizza é uma pizzaria artesanal que se dedica a oferecer 
-                as melhores pizzas da região. Com ingredientes frescos e receitas 
-                exclusivas, garantimos uma experiência única para nossos clientes.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="bg-black py-6 sm:py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-white">
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <div className="bg-red-600 text-white rounded-full w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center text-lg sm:text-xl font-bold">
-              T
-            </div>
-            <span className="text-xl sm:text-2xl font-bold">TALOLA PIZZA</span>
-          </div>
-          <p className="text-orange-300 text-sm sm:text-base">
-            &copy; 2024 Talola Pizza. Todos os direitos reservados.
+          <p className="text-xl text-slate-300 max-w-2xl mx-auto leading-relaxed">
+            Promoções imperdíveis para você saborear o melhor da nossa cozinha
           </p>
         </div>
-      </footer>
+
+        <div className="grid md:grid-cols-2 gap-8 max-w-6xl mx-auto">
+          {specialOffers.map((offer, index) => (
+            <Card key={index} className="group overflow-hidden bg-gradient-to-br from-slate-900/95 to-slate-800/95 backdrop-blur-xl border-slate-700/50 hover:border-orange-500/50 hover:shadow-2xl hover:shadow-orange-500/10 transition-all duration-500">
+              <div className="relative aspect-[16/9] overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent z-10" />
+                <img 
+                  src={offer.image} 
+                  alt={offer.title}
+                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                />
+                <div className="absolute top-4 right-4 z-20">
+                  <Badge className="bg-gradient-to-r from-orange-500 to-red-500 text-white text-sm font-bold px-3 py-1 backdrop-blur-sm animate-pulse">
+                    <Sparkles className="h-3 w-3 mr-1" />
+                    OFERTA ESPECIAL
+                  </Badge>
+                </div>
+              </div>
+              
+              <CardHeader className="pb-4">
+                <CardTitle className="text-2xl text-white font-bold group-hover:text-orange-300 transition-colors">
+                  {offer.title}
+                </CardTitle>
+                <CardDescription className="text-slate-300 text-base leading-relaxed">
+                  {offer.description}
+                </CardDescription>
+              </CardHeader>
+              
+              <CardContent className="pt-0">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <span className="text-3xl font-bold text-green-400">{offer.price}</span>
+                    <span className="text-lg text-slate-400 line-through">{offer.originalPrice}</span>
+                  </div>
+                </div>
+                
+                <Button
+                  onClick={handleOrderClick}
+                  disabled={!isOpen}
+                  className={`w-full py-3 text-lg font-bold rounded-xl transition-all duration-300 ${
+                    isOpen 
+                      ? 'bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white shadow-lg hover:shadow-xl hover:shadow-orange-500/25 hover:scale-[1.02]' 
+                      : 'bg-slate-700 cursor-not-allowed text-slate-400'
+                  }`}
+                >
+                  {isOpen ? 'PEDIR AGORA' : 'LOJA FECHADA'}
+                </Button>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section className="py-20 bg-gradient-to-r from-slate-900/50 to-slate-800/50 backdrop-blur-xl">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-16">
+            <h2 className="text-5xl font-bold mb-6 bg-gradient-to-r from-orange-400 to-red-400 bg-clip-text text-transparent">
+              Por Que Escolher Tony's?
+            </h2>
+            <p className="text-xl text-slate-300 max-w-2xl mx-auto leading-relaxed">
+              Qualidade, sabor e tradição em cada fatia
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+            {features.map((feature, index) => {
+              const IconComponent = feature.icon;
+              return (
+                <Card key={index} className="group text-center bg-gradient-to-br from-slate-900/95 to-slate-800/95 backdrop-blur-xl border-slate-700/50 hover:border-orange-500/50 hover:shadow-2xl hover:shadow-orange-500/10 transition-all duration-500">
+                  <CardHeader className="pb-6">
+                    <div className={`mx-auto w-20 h-20 rounded-full bg-gradient-to-r ${feature.color} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg`}>
+                      <IconComponent className="h-10 w-10 text-white" />
+                    </div>
+                    <CardTitle className="text-2xl text-white font-bold group-hover:text-orange-300 transition-colors">
+                      {feature.title}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <CardDescription className="text-slate-300 text-lg leading-relaxed">
+                      {feature.description}
+                    </CardDescription>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* Contact Section */}
+      <section className="py-20 container mx-auto px-4">
+        <div className="max-w-4xl mx-auto">
+          <Card className="bg-gradient-to-br from-slate-900/95 to-slate-800/95 backdrop-blur-xl border-slate-700/50 shadow-2xl">
+            <CardHeader className="text-center bg-gradient-to-r from-orange-500/10 to-red-500/10 border-b border-slate-700/50">
+              <CardTitle className="text-4xl font-bold bg-gradient-to-r from-orange-400 to-red-400 bg-clip-text text-transparent">
+                Contato & Localização
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-8">
+              <div className="grid md:grid-cols-2 gap-8">
+                <div className="space-y-6">
+                  <div className="flex items-center space-x-4 p-4 bg-slate-800/50 rounded-xl border border-slate-700/50">
+                    <div className="bg-orange-500/20 p-3 rounded-lg">
+                      <MapPin className="h-6 w-6 text-orange-400" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-white text-lg">Endereço</h3>
+                      <p className="text-slate-300">Rua das Pizzas, 123 - Centro</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center space-x-4 p-4 bg-slate-800/50 rounded-xl border border-slate-700/50">
+                    <div className="bg-green-500/20 p-3 rounded-lg">
+                      <Phone className="h-6 w-6 text-green-400" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-white text-lg">Telefone</h3>
+                      <p className="text-slate-300">(21) 97540-6476</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center space-x-4 p-4 bg-slate-800/50 rounded-xl border border-slate-700/50">
+                    <div className="bg-blue-500/20 p-3 rounded-lg">
+                      <Clock className="h-6 w-6 text-blue-400" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-white text-lg">Horário</h3>
+                      <p className="text-slate-300">Seg-Dom: 18:00 - 00:00</p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="space-y-6">
+                  <div className="bg-gradient-to-r from-orange-500/10 to-red-500/10 p-6 rounded-xl border border-orange-500/20">
+                    <h3 className="font-bold text-white text-xl mb-4">🍕 Delivery Grátis</h3>
+                    <p className="text-slate-300 leading-relaxed">
+                      Para pedidos acima de R$ 50,00 na região central. 
+                      Entrega em até 30 minutos!
+                    </p>
+                  </div>
+                  
+                  <div className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 p-6 rounded-xl border border-green-500/20">
+                    <h3 className="font-bold text-white text-xl mb-4">💳 Formas de Pagamento</h3>
+                    <div className="flex gap-2 flex-wrap">
+                      <Badge className="bg-green-600 text-white">PIX</Badge>
+                      <Badge className="bg-blue-600 text-white">Cartão</Badge>
+                      <Badge className="bg-yellow-600 text-white">Dinheiro</Badge>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </section>
     </div>
   );
 };
