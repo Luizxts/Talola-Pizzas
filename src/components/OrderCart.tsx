@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { ShoppingCart, Trash2, Minus, Plus } from 'lucide-react';
+import { ShoppingCart, Trash2, Minus, Plus, CreditCard, Truck } from 'lucide-react';
 
 interface CartItem {
   id: string;
@@ -42,12 +42,15 @@ const OrderCart: React.FC<OrderCartProps> = ({
 
   if (items.length === 0) {
     return (
-      <Card className="sticky top-32 bg-black/60 backdrop-blur-sm border-white/20">
-        <CardContent className="text-center py-8">
-          <ShoppingCart className="mx-auto h-12 w-12 text-orange-400 mb-4" />
-          <p className="text-orange-200">Seu carrinho está vazio</p>
-          <p className="text-sm text-orange-300 mt-2">
-            Adicione pizzas deliciosas do nosso cardápio
+      <Card className="sticky top-32 bg-gradient-to-br from-slate-900/95 to-slate-800/95 backdrop-blur-xl border-slate-700/50 shadow-2xl">
+        <CardContent className="text-center py-12">
+          <div className="relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-orange-500/20 to-red-500/20 rounded-full blur-xl"></div>
+            <ShoppingCart className="relative mx-auto h-16 w-16 text-orange-400 mb-6" />
+          </div>
+          <h3 className="text-xl font-bold text-white mb-2">Seu carrinho está vazio</h3>
+          <p className="text-slate-300 leading-relaxed">
+            Adicione pizzas deliciosas do nosso cardápio e monte seu pedido perfeito!
           </p>
         </CardContent>
       </Card>
@@ -55,90 +58,105 @@ const OrderCart: React.FC<OrderCartProps> = ({
   }
 
   return (
-    <Card className="sticky top-32 bg-black/60 backdrop-blur-sm border-white/20">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-white">
-          <ShoppingCart className="h-5 w-5" />
-          Seu Pedido ({items.length} {items.length === 1 ? 'item' : 'itens'})
+    <Card className="sticky top-32 bg-gradient-to-br from-slate-900/95 to-slate-800/95 backdrop-blur-xl border-slate-700/50 shadow-2xl">
+      <CardHeader className="bg-gradient-to-r from-orange-500/10 to-red-500/10 border-b border-slate-700/50">
+        <CardTitle className="flex items-center gap-3 text-white">
+          <div className="p-2 bg-orange-500/20 rounded-lg">
+            <ShoppingCart className="h-6 w-6 text-orange-400" />
+          </div>
+          <div>
+            <div className="text-xl font-bold">Seu Pedido</div>
+            <div className="text-sm text-slate-300 font-normal">
+              {items.length} {items.length === 1 ? 'item' : 'itens'}
+            </div>
+          </div>
         </CardTitle>
       </CardHeader>
       
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-6 p-6">
         {/* Cart Items */}
-        <div className="space-y-3 max-h-96 overflow-y-auto">
+        <div className="space-y-4 max-h-96 overflow-y-auto custom-scrollbar">
           {items.map((item, index) => (
-            <div key={`${item.id}-${index}`} className="bg-white/10 rounded-lg p-3 border border-white/10">
-              <div className="flex justify-between items-start mb-2">
-                <h4 className="font-medium text-sm text-white leading-tight">{item.name}</h4>
+            <div key={`${item.id}-${index}`} className="group bg-gradient-to-r from-slate-800/50 to-slate-700/30 rounded-xl p-4 border border-slate-700/50 hover:border-orange-500/30 transition-all duration-300">
+              <div className="flex justify-between items-start mb-3">
+                <div className="flex-1">
+                  <h4 className="font-bold text-white leading-tight mb-1">{item.name}</h4>
+                  
+                  {/* Special Offer Badge */}
+                  {item.isSpecialOffer && (
+                    <Badge className="bg-gradient-to-r from-green-600 to-green-500 text-white text-xs mb-2">
+                      🎉 Oferta Especial
+                    </Badge>
+                  )}
+                  
+                  {/* Size Display */}
+                  {item.selectedOptions?.size && (
+                    <div className="text-xs text-orange-300 bg-orange-500/10 px-2 py-1 rounded-lg inline-block">
+                      📏 {item.selectedOptions.size.name}
+                    </div>
+                  )}
+                </div>
+                
                 <Button
                   size="sm"
                   variant="ghost"
                   onClick={() => onRemoveItem(index)}
                   disabled={!isStoreOpen}
-                  className="text-red-400 hover:text-red-300 p-1 h-6 w-6"
+                  className="text-red-400 hover:text-red-300 hover:bg-red-500/10 p-2 h-8 w-8 opacity-0 group-hover:opacity-100 transition-all duration-200"
                 >
-                  <Trash2 className="h-3 w-3" />
+                  <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
               
-              {/* Special Offer Badge */}
-              {item.isSpecialOffer && (
-                <Badge className="bg-green-600 text-white text-xs mb-2">
-                  Oferta Especial
-                </Badge>
-              )}
-              
-              {/* Size Display */}
-              {item.selectedOptions?.size && (
-                <div className="text-xs text-orange-200 mb-2">
-                  Tamanho: {item.selectedOptions.size.name}
-                </div>
-              )}
-              
               <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-3">
                   <Button
                     size="sm"
                     variant="outline"
                     onClick={() => onUpdateQuantity(index, Math.max(1, item.quantity - 1))}
                     disabled={item.quantity <= 1 || !isStoreOpen}
-                    className="h-6 w-6 p-0 border-white/20 text-white hover:bg-white/10"
+                    className="h-8 w-8 p-0 border-orange-400/50 text-orange-300 hover:bg-orange-500/20 rounded-full"
                   >
                     <Minus className="h-3 w-3" />
                   </Button>
-                  <span className="text-sm font-medium px-2 text-white">{item.quantity}</span>
+                  <span className="text-lg font-bold text-white bg-slate-800 px-3 py-1 rounded-lg min-w-[2.5rem] text-center border border-slate-600">
+                    {item.quantity}
+                  </span>
                   <Button
                     size="sm"
                     variant="outline"
                     onClick={() => onUpdateQuantity(index, item.quantity + 1)}
                     disabled={!isStoreOpen}
-                    className="h-6 w-6 p-0 border-white/20 text-white hover:bg-white/10"
+                    className="h-8 w-8 p-0 border-orange-400/50 text-orange-300 hover:bg-orange-500/20 rounded-full"
                   >
                     <Plus className="h-3 w-3" />
                   </Button>
                 </div>
-                <span className="font-semibold text-sm text-green-400">{formatPrice(item.totalPrice)}</span>
+                <span className="font-bold text-lg text-green-400">{formatPrice(item.totalPrice)}</span>
               </div>
             </div>
           ))}
         </div>
 
-        <Separator className="bg-white/20" />
+        <Separator className="bg-gradient-to-r from-transparent via-slate-600 to-transparent" />
 
         {/* Order Summary */}
-        <div className="space-y-2">
-          <div className="flex justify-between text-sm text-orange-200">
+        <div className="space-y-3 bg-slate-800/30 p-4 rounded-xl border border-slate-700/50">
+          <div className="flex justify-between text-slate-300">
             <span>Subtotal</span>
-            <span>{formatPrice(subtotal)}</span>
+            <span className="font-semibold">{formatPrice(subtotal)}</span>
           </div>
-          <div className="flex justify-between text-sm text-orange-200">
-            <span>Taxa de entrega</span>
-            <span>{formatPrice(deliveryFee)}</span>
+          <div className="flex justify-between text-slate-300">
+            <span className="flex items-center gap-2">
+              <Truck className="h-4 w-4" />
+              Taxa de entrega
+            </span>
+            <span className="font-semibold">{formatPrice(deliveryFee)}</span>
           </div>
-          <Separator className="bg-white/20" />
-          <div className="flex justify-between font-bold text-white">
-            <span>Total</span>
-            <span className="text-lg text-green-400">{formatPrice(total)}</span>
+          <Separator className="bg-slate-600/50" />
+          <div className="flex justify-between font-bold text-xl">
+            <span className="text-white">Total</span>
+            <span className="text-green-400 text-2xl">{formatPrice(total)}</span>
           </div>
         </div>
 
@@ -146,19 +164,36 @@ const OrderCart: React.FC<OrderCartProps> = ({
         <Button 
           onClick={onCheckout}
           disabled={!isStoreOpen}
-          className={`w-full py-3 text-lg font-bold ${isStoreOpen ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-600 cursor-not-allowed'} text-white`}
+          className={`w-full py-4 text-lg font-bold rounded-xl transition-all duration-300 ${
+            isStoreOpen 
+              ? 'bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 text-white shadow-lg hover:shadow-xl hover:shadow-green-500/25 hover:scale-[1.02]' 
+              : 'bg-slate-700 cursor-not-allowed text-slate-400'
+          }`}
           size="lg"
         >
-          {isStoreOpen ? `Finalizar Pedido - ${formatPrice(total)}` : 'Loja Fechada'}
+          {isStoreOpen ? (
+            <div className="flex items-center justify-center gap-2">
+              <CreditCard className="h-5 w-5" />
+              Finalizar Pedido - {formatPrice(total)}
+            </div>
+          ) : (
+            'Loja Fechada'
+          )}
         </Button>
 
         {/* Payment Methods */}
-        <div className="text-center">
-          <p className="text-xs text-orange-300 mb-2">Formas de pagamento:</p>
-          <div className="flex justify-center gap-2">
-            <Badge variant="outline" className="text-xs border-orange-300 text-orange-300">PIX</Badge>
-            <Badge variant="outline" className="text-xs border-orange-300 text-orange-300">Cartão</Badge>
-            <Badge variant="outline" className="text-xs border-orange-300 text-orange-300">Dinheiro</Badge>
+        <div className="text-center p-4 bg-slate-800/20 rounded-xl border border-slate-700/30">
+          <p className="text-sm text-slate-300 mb-3 font-semibold">💳 Formas de pagamento aceitas:</p>
+          <div className="flex justify-center gap-3 flex-wrap">
+            <Badge variant="outline" className="text-sm border-green-400/50 text-green-300 bg-green-500/10 px-3 py-1">
+              🏦 PIX
+            </Badge>
+            <Badge variant="outline" className="text-sm border-blue-400/50 text-blue-300 bg-blue-500/10 px-3 py-1">
+              💳 Cartão
+            </Badge>
+            <Badge variant="outline" className="text-sm border-yellow-400/50 text-yellow-300 bg-yellow-500/10 px-3 py-1">
+              💵 Dinheiro
+            </Badge>
           </div>
         </div>
       </CardContent>
