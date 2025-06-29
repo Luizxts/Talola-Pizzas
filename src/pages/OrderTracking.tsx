@@ -1,12 +1,13 @@
+
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle2, Clock, Truck, ChefHat, MessageCircle, Home, Star } from 'lucide-react';
+import { CheckCircle2, Clock, Truck, ChefHat, MessageCircle, Home, Package } from 'lucide-react';
 import { toast } from 'sonner';
-import OrderReview from '@/components/OrderReview';
+import OrderStatus from '@/components/OrderStatus';
 
 interface Order {
   id: string;
@@ -23,27 +24,16 @@ interface Order {
   delivered_at?: string;
 }
 
-interface OrderReviewData {
-  id: string;
-  rating: number;
-  comment: string;
-  created_at: string;
-}
-
 const OrderTracking = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [order, setOrder] = useState<Order | null>(location.state?.order || null);
-  const [existingReview, setExistingReview] = useState<OrderReviewData | null>(null);
-  const [showReviewForm, setShowReviewForm] = useState(false);
 
   useEffect(() => {
     if (!order) {
       navigate('/');
       return;
     }
-
-    fetchExistingReview();
 
     // Atualizar status do pedido em tempo real
     const channel = supabase
@@ -60,9 +50,20 @@ const OrderTracking = () => {
           const updatedOrder = { ...order, ...payload.new } as Order;
           setOrder(updatedOrder);
           
-          // Se o pedido foi entregue, mostrar opção de avaliação
-          if (payload.new.status === 'completed' && !existingReview) {
-            setShowReviewForm(true);
+          // Notificar sobre mudanças de status
+          if (payload.new.status !== order.status) {
+            const statusMessages = {
+              confirmed: 'Pedido confirmado! Iniciando preparo.',
+              preparing: 'Sua pizza está sendo preparada com carinho!',
+              ready: 'Pedido pronto! Saindo para entrega.',
+              delivering: 'Pedido a caminho! Chegando em breve.',
+              completed: 'Pedido entregue! Obrigado pela preferência.'
+            };
+            
+            const message = statusMessages[payload.new.status as keyof typeof statusMessages];
+            if (message) {
+              toast.success(message);
+            }
           }
         }
       )
@@ -71,19 +72,7 @@ const OrderTracking = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [order, navigate, existingReview]);
-
-  const fetchExistingReview = async () => {
-    if (!order) return;
-
-    try {
-      // For now, we'll simulate no existing review since the table might not be fully set up
-      console.log('Checking for existing review for order:', order.id);
-      // This will be implemented when the order_reviews table is properly configured
-    } catch (error) {
-      console.error('Erro ao buscar avaliação:', error);
-    }
-  };
+  }, [order, navigate]);
 
   const handleConfirmDelivery = async () => {
     if (!order) return;
@@ -100,21 +89,11 @@ const OrderTracking = () => {
       if (error) throw error;
 
       setOrder({ ...order, status: 'completed', delivered_at: new Date().toISOString() });
-      
-      if (!existingReview) {
-        setShowReviewForm(true);
-      }
-      
-      toast.success('Entrega confirmada!');
+      toast.success('Entrega confirmada! Obrigado pela preferência!');
     } catch (error: any) {
       console.error('Erro ao confirmar entrega:', error);
       toast.error('Erro ao confirmar entrega');
     }
-  };
-
-  const handleReviewSubmitted = () => {
-    setShowReviewForm(false);
-    fetchExistingReview();
   };
 
   if (!order) {
@@ -138,7 +117,7 @@ const OrderTracking = () => {
         return {
           icon: Clock,
           text: 'Pedido Recebido',
-          description: 'Aguardando confirmação',
+          description: 'Aguardando confirmação do restaurante',
           color: 'text-yellow-400',
           bgColor: 'bg-yellow-400/20'
         };
@@ -146,7 +125,7 @@ const OrderTracking = () => {
         return {
           icon: CheckCircle2,
           text: 'Pedido Confirmado',
-          description: 'Iniciando preparo',
+          description: 'Iniciando preparo da sua pizza',
           color: 'text-blue-400',
           bgColor: 'bg-blue-400/20'
         };
@@ -154,31 +133,31 @@ const OrderTracking = () => {
         return {
           icon: ChefHat,
           text: 'Preparando',
-          description: 'Sua pizza está sendo preparada',
+          description: 'Sua pizza está sendo preparada com carinho',
           color: 'text-orange-400',
           bgColor: 'bg-orange-400/20'
         };
       case 'ready':
         return {
-          icon: CheckCircle2,
-          text: 'Pronto',
-          description: 'Saindo para entrega',
-          color: 'text-green-400',
-          bgColor: 'bg-green-400/20'
+          icon: Package,
+          text: 'Pronto para Entrega',
+          description: 'Pizza pronta, saindo para entrega',
+          color: 'text-purple-400',
+          bgColor: 'bg-purple-400/20'
         };
       case 'delivering':
         return {
           icon: Truck,
           text: 'Saindo para Entrega',
           description: 'A caminho do seu endereço',
-          color: 'text-purple-400',
-          bgColor: 'bg-purple-400/20'
+          color: 'text-indigo-400',
+          bgColor: 'bg-indigo-400/20'
         };
       case 'completed':
         return {
           icon: CheckCircle2,
-          text: 'Entregue',
-          description: 'Pedido concluído',
+          text: 'Pedido Entregue',
+          description: 'Entregue com sucesso!',
           color: 'text-green-500',
           bgColor: 'bg-green-500/20'
         };
@@ -186,7 +165,7 @@ const OrderTracking = () => {
         return {
           icon: Clock,
           text: 'Processando',
-          description: 'Verificando status',
+          description: 'Verificando status do pedido',
           color: 'text-gray-400',
           bgColor: 'bg-gray-400/20'
         };
@@ -207,7 +186,7 @@ const OrderTracking = () => {
     { key: 'pending', text: 'Recebido', icon: Clock },
     { key: 'confirmed', text: 'Confirmado', icon: CheckCircle2 },
     { key: 'preparing', text: 'Preparando', icon: ChefHat },
-    { key: 'ready', text: 'Pronto', icon: CheckCircle2 },
+    { key: 'ready', text: 'Pronto', icon: Package },
     { key: 'delivering', text: 'Entregando', icon: Truck },
     { key: 'completed', text: 'Entregue', icon: CheckCircle2 }
   ];
@@ -257,7 +236,7 @@ const OrderTracking = () => {
               {order.estimated_delivery_time && order.status !== 'completed' && (
                 <div className="bg-white/10 rounded-lg p-4 inline-block">
                   <p className="text-orange-200">Previsão de entrega:</p>
-                  <p className="text-white font-bold">
+                  <p className="text-white font-bold text-xl">
                     {new Date(order.estimated_delivery_time).toLocaleTimeString('pt-BR', {
                       hour: '2-digit',
                       minute: '2-digit'
@@ -272,8 +251,9 @@ const OrderTracking = () => {
                   <Button
                     onClick={handleConfirmDelivery}
                     className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 text-lg"
+                    size="lg"
                   >
-                    Confirmar Entrega
+                    ✅ Confirmar Entrega
                   </Button>
                 </div>
               )}
@@ -283,10 +263,10 @@ const OrderTracking = () => {
           {/* Timeline */}
           <Card className="bg-black/60 backdrop-blur-sm border-white/20">
             <CardHeader>
-              <CardTitle className="text-white">Acompanhamento do Pedido</CardTitle>
+              <CardTitle className="text-white">Status do Pedido</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
+              <div className="space-y-6">
                 {steps.map((step, index) => {
                   const StepIcon = step.icon;
                   const isCompleted = index <= currentStepIndex;
@@ -295,25 +275,25 @@ const OrderTracking = () => {
                   return (
                     <div key={step.key} className="flex items-center space-x-4">
                       <div className={`
-                        w-12 h-12 rounded-full flex items-center justify-center border-2
+                        w-12 h-12 rounded-full flex items-center justify-center border-2 transition-all
                         ${isCompleted 
                           ? 'bg-green-500 border-green-500 text-white' 
                           : 'bg-white/10 border-white/20 text-gray-400'
                         }
-                        ${isCurrent ? 'ring-4 ring-green-500/30' : ''}
+                        ${isCurrent ? 'ring-4 ring-green-500/30 scale-110' : ''}
                       `}>
                         <StepIcon className="h-6 w-6" />
                       </div>
                       <div className="flex-1">
-                        <p className={`font-medium ${isCompleted ? 'text-white' : 'text-gray-400'}`}>
+                        <p className={`font-medium text-lg ${isCompleted ? 'text-white' : 'text-gray-400'}`}>
                           {step.text}
                         </p>
                         {isCurrent && (
-                          <p className="text-green-400 text-sm">Em andamento</p>
+                          <p className="text-green-400 text-sm animate-pulse">● Em andamento</p>
                         )}
                       </div>
                       {isCompleted && (
-                        <CheckCircle2 className="h-5 w-5 text-green-500" />
+                        <CheckCircle2 className="h-6 w-6 text-green-500" />
                       )}
                     </div>
                   );
@@ -321,44 +301,6 @@ const OrderTracking = () => {
               </div>
             </CardContent>
           </Card>
-
-          {/* Formulário de Avaliação */}
-          {showReviewForm && !existingReview && order.status === 'completed' && (
-            <OrderReview
-              orderId={order.id}
-              customerId={order.customer_id}
-              onReviewSubmitted={handleReviewSubmitted}
-            />
-          )}
-
-          {/* Avaliação Existente */}
-          {existingReview && (
-            <Card className="bg-black/60 backdrop-blur-sm border-white/20">
-              <CardHeader>
-                <CardTitle className="text-white">Sua Avaliação</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center space-x-2 mb-3">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <Star
-                      key={star}
-                      className={`h-6 w-6 ${
-                        star <= existingReview.rating
-                          ? 'text-yellow-400 fill-yellow-400'
-                          : 'text-gray-400'
-                      }`}
-                    />
-                  ))}
-                </div>
-                {existingReview.comment && (
-                  <p className="text-white">{existingReview.comment}</p>
-                )}
-                <p className="text-gray-400 text-sm mt-2">
-                  Avaliado em {new Date(existingReview.created_at).toLocaleDateString('pt-BR')}
-                </p>
-              </CardContent>
-            </Card>
-          )}
 
           {/* Detalhes do Pedido */}
           <div className="grid md:grid-cols-2 gap-8">
@@ -369,15 +311,11 @@ const OrderTracking = () => {
               <CardContent className="space-y-4">
                 <div className="flex justify-between">
                   <span className="text-orange-200">Pedido:</span>
-                  <span className="text-white">#{order.id.slice(-8)}</span>
+                  <span className="text-white font-mono">#{order.id.slice(-8)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-orange-200">Cliente:</span>
-                  <span className="text-white">{order.customer_name}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-orange-200">Telefone:</span>
-                  <span className="text-white">{order.customer_phone}</span>
+                  <span className="text-orange-200">Status:</span>
+                  <OrderStatus status={order.status} size="sm" />
                 </div>
                 <div className="flex justify-between">
                   <span className="text-orange-200">Pagamento:</span>
@@ -386,7 +324,7 @@ const OrderTracking = () => {
                       ? 'bg-green-600 text-white' 
                       : 'bg-yellow-600 text-white'
                   }>
-                    {order.payment_status === 'paid' ? 'Pago' : 'Pendente'}
+                    {order.payment_status === 'paid' ? '✅ Pago' : '⏳ Pendente'}
                   </Badge>
                 </div>
                 <div className="flex justify-between font-bold text-lg pt-2 border-t border-white/20">
@@ -398,12 +336,15 @@ const OrderTracking = () => {
 
             <Card className="bg-black/60 backdrop-blur-sm border-white/20">
               <CardHeader>
-                <CardTitle className="text-white">Endereço de Entrega</CardTitle>
+                <CardTitle className="text-white">Contato e Ações</CardTitle>
               </CardHeader>
-              <CardContent>
-                <p className="text-white">{order.customer_address}</p>
+              <CardContent className="space-y-4">
+                <div>
+                  <p className="text-orange-200 text-sm">Endereço de entrega:</p>
+                  <p className="text-white">{order.customer_address}</p>
+                </div>
                 
-                <div className="mt-6 space-y-3">
+                <div className="space-y-3">
                   <Button
                     onClick={() => window.open(whatsappUrl, '_blank')}
                     className="w-full bg-green-600 hover:bg-green-700 text-white"
@@ -417,7 +358,7 @@ const OrderTracking = () => {
                     variant="outline"
                     className="w-full border-white/20 text-white hover:bg-white/10"
                   >
-                    Fazer Novo Pedido
+                    🍕 Fazer Novo Pedido
                   </Button>
                 </div>
               </CardContent>

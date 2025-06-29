@@ -4,7 +4,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Plus, Minus } from 'lucide-react';
@@ -43,24 +42,15 @@ const MenuCard: React.FC<MenuItemProps> = ({
   const [quantity, setQuantity] = useState(1);
 
   const sizeOptions = options.filter(opt => opt.optionType === 'size');
-  const extraOptions = options.filter(opt => opt.optionType === 'extra');
   const isCombo = name.includes('Combo') || name.includes('Promoção');
 
   const calculatePrice = () => {
     let price = basePrice;
     
-    // Adicionar modificadores de preço das opções selecionadas
-    Object.values(selectedOptions).forEach((option: any) => {
-      if (Array.isArray(option)) {
-        // Para extras (múltipla seleção)
-        option.forEach((opt: any) => {
-          if (opt) price += opt.priceModifier;
-        });
-      } else if (option) {
-        // Para tamanho (seleção única)
-        price += option.priceModifier;
-      }
-    });
+    // Adicionar modificadores de preço das opções selecionadas (apenas tamanho)
+    if (selectedOptions.size) {
+      price += selectedOptions.size.priceModifier;
+    }
     
     return price * quantity;
   };
@@ -71,26 +61,6 @@ const MenuCard: React.FC<MenuItemProps> = ({
       ...prev,
       size: selectedOption
     }));
-  };
-
-  const handleExtraChange = (optionId: string, checked: boolean) => {
-    const selectedOption = extraOptions.find(opt => opt.id === optionId);
-    if (!selectedOption) return;
-
-    setSelectedOptions(prev => {
-      const currentExtras = prev.extras || [];
-      if (checked) {
-        return {
-          ...prev,
-          extras: [...currentExtras, selectedOption]
-        };
-      } else {
-        return {
-          ...prev,
-          extras: currentExtras.filter((opt: any) => opt.id !== optionId)
-        };
-      }
-    });
   };
 
   const handleAddToCart = () => {
@@ -104,19 +74,16 @@ const MenuCard: React.FC<MenuItemProps> = ({
     });
 
     if (missingRequired && !isCombo) {
-      alert('Por favor, selecione todas as opções obrigatórias');
+      alert('Por favor, selecione o tamanho da pizza');
       return;
     }
 
     const itemName = selectedOptions.size ? 
       `${name} (${selectedOptions.size.name})` : name;
 
-    const extrasText = selectedOptions.extras?.length > 0 ? 
-      ` + ${selectedOptions.extras.map((e: any) => e.name).join(', ')}` : '';
-
     onAddToCart({
       id,
-      name: itemName + extrasText,
+      name: itemName,
       basePrice: calculatePrice() / quantity,
       selectedOptions,
       quantity,
@@ -179,44 +146,22 @@ const MenuCard: React.FC<MenuItemProps> = ({
         {/* Opções de Tamanho */}
         {sizeOptions.length > 0 && !isCombo && (
           <div className="space-y-2">
-            <h4 className="font-semibold text-sm text-white">Tamanho:</h4>
+            <h4 className="font-semibold text-sm text-white">Escolha o tamanho:</h4>
             <RadioGroup value={selectedOptions.size?.id || ''} onValueChange={handleSizeChange}>
               {sizeOptions.map((option) => (
                 <div key={option.id} className="flex items-center space-x-2">
                   <RadioGroupItem value={option.id} id={option.id} />
-                  <Label htmlFor={option.id} className="text-sm text-orange-200 cursor-pointer">
-                    {option.name}
-                    {option.priceModifier !== 0 && (
-                      <span className={`font-medium ml-1 ${option.priceModifier > 0 ? 'text-red-400' : 'text-green-400'}`}>
-                        {option.priceModifier > 0 ? '+' : ''}{formatPrice(option.priceModifier)}
+                  <Label htmlFor={option.id} className="text-sm text-orange-200 cursor-pointer flex-1">
+                    <div className="flex justify-between items-center">
+                      <span>{option.name}</span>
+                      <span className={`font-medium ${option.priceModifier > 0 ? 'text-red-400' : option.priceModifier < 0 ? 'text-green-400' : 'text-orange-200'}`}>
+                        {option.priceModifier > 0 ? '+' : ''}{formatPrice(basePrice + option.priceModifier)}
                       </span>
-                    )}
+                    </div>
                   </Label>
                 </div>
               ))}
             </RadioGroup>
-          </div>
-        )}
-
-        {/* Extras */}
-        {extraOptions.length > 0 && !isCombo && (
-          <div className="space-y-2">
-            <h4 className="font-semibold text-sm text-white">Extras (+R$ 3,00 cada):</h4>
-            {extraOptions.map((option) => (
-              <div key={option.id} className="flex items-center space-x-2">
-                <Checkbox
-                  id={option.id}
-                  checked={selectedOptions.extras?.some((e: any) => e.id === option.id) || false}
-                  onCheckedChange={(checked) => handleExtraChange(option.id, checked as boolean)}
-                />
-                <Label htmlFor={option.id} className="text-sm text-orange-200 cursor-pointer">
-                  {option.name}
-                  <span className="text-red-400 font-medium ml-1">
-                    +{formatPrice(option.priceModifier)}
-                  </span>
-                </Label>
-              </div>
-            ))}
           </div>
         )}
 

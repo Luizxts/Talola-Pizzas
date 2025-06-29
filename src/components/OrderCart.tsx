@@ -47,7 +47,7 @@ const OrderCart: React.FC<OrderCartProps> = ({
           <ShoppingCart className="mx-auto h-12 w-12 text-orange-400 mb-4" />
           <p className="text-orange-200">Seu carrinho está vazio</p>
           <p className="text-sm text-orange-300 mt-2">
-            Adicione itens do cardápio para começar
+            Adicione pizzas deliciosas do nosso cardápio
           </p>
         </CardContent>
       </Card>
@@ -88,15 +88,10 @@ const OrderCart: React.FC<OrderCartProps> = ({
                 </Badge>
               )}
               
-              {/* Selected Options Display */}
-              {item.selectedOptions && (
-                <div className="text-xs text-orange-200 mb-2 space-y-1">
-                  {item.selectedOptions.size && (
-                    <div>Tamanho: {item.selectedOptions.size.name}</div>
-                  )}
-                  {item.selectedOptions.extras && item.selectedOptions.extras.length > 0 && (
-                    <div>Extras: {item.selectedOptions.extras.map((e: any) => e.name).join(', ')}</div>
-                  )}
+              {/* Size Display */}
+              {item.selectedOptions?.size && (
+                <div className="text-xs text-orange-200 mb-2">
+                  Tamanho: {item.selectedOptions.size.name}
                 </div>
               )}
               
