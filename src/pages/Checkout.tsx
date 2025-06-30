@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -8,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, CreditCard, Smartphone, Banknote, Clock } from 'lucide-react';
+import { ArrowLeft, Smartphone, Banknote, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { useStoreStatus } from '@/hooks/useStoreStatus';
 import StoreStatusBanner from '@/components/StoreStatusBanner';
@@ -41,7 +42,6 @@ const Checkout = () => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // Verificar se a loja está aberta quando acessar checkout
     if (!isOpen) {
       toast.error('Loja fechada! Não é possível finalizar pedidos.');
       navigate('/');
@@ -89,7 +89,7 @@ const Checkout = () => {
 
       if (addressError) throw addressError;
 
-      // Criar pedido - converter Date para string ISO
+      // Criar pedido
       const estimatedDeliveryTime = new Date(Date.now() + 45 * 60000).toISOString();
       
       const { data: orderResult, error: orderError } = await supabase
@@ -101,7 +101,7 @@ const Checkout = () => {
           delivery_fee: deliveryFee,
           total: finalTotal,
           payment_method: customerData.paymentMethod,
-          payment_status: customerData.paymentMethod === 'pix' ? 'pending' : 'paid',
+          payment_status: customerData.paymentMethod === 'pix' ? 'pending' : 'not_required',
           status: 'pending',
           notes: `Items: ${cartItems.map(item => `${item.quantity}x ${item.name}`).join(', ')}`,
           estimated_delivery_time: estimatedDeliveryTime
@@ -117,7 +117,7 @@ const Checkout = () => {
           .from('order_items')
           .insert({
             order_id: orderResult.id,
-            product_id: item.id.split('-')[0], // Remove sufixo de opção
+            product_id: item.id.split('-')[0],
             quantity: item.quantity,
             unit_price: item.basePrice,
             total_price: item.totalPrice,
@@ -130,20 +130,23 @@ const Checkout = () => {
       // Limpar carrinho
       localStorage.removeItem('cart');
 
+      const orderData = {
+        ...orderResult,
+        customer_name: customerData.name,
+        customer_phone: customerData.phone,
+        customer_address: customerData.address,
+        items: cartItems,
+        total_amount: finalTotal
+      };
+
       toast.success('Pedido realizado com sucesso!');
       
-      navigate('/order-tracking', { 
-        state: { 
-          order: {
-            ...orderResult,
-            customer_name: customerData.name,
-            customer_phone: customerData.phone,
-            customer_address: customerData.address,
-            items: cartItems,
-            total_amount: finalTotal
-          }
-        } 
-      });
+      // Redirecionar baseado no método de pagamento
+      if (customerData.paymentMethod === 'pix') {
+        navigate('/payment-confirmation', { state: { order: orderData } });
+      } else {
+        navigate('/order-tracking', { state: { order: orderData } });
+      }
     } catch (error: any) {
       console.error('Erro ao criar pedido:', error);
       if (error.message?.includes('Loja fechada')) {
@@ -178,7 +181,6 @@ const Checkout = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-500 via-red-600 to-pink-700">
-      {/* Status Banner */}
       <StoreStatusBanner />
 
       {/* Header */}
@@ -308,25 +310,27 @@ const Checkout = () => {
                     onValueChange={(value) => setCustomerData({...customerData, paymentMethod: value})}
                     className="mt-2"
                   >
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-2 bg-gradient-to-r from-green-500/10 to-green-600/10 p-4 rounded-lg border border-green-400/30">
                       <RadioGroupItem value="pix" id="pix" />
-                      <Label htmlFor="pix" className="flex items-center gap-2 text-white">
+                      <Label htmlFor="pix" className="flex items-center gap-2 text-white flex-1">
                         <Smartphone className="h-4 w-4" />
-                        PIX - (21) 97540-6476
+                        <div>
+                          <div className="font-semibold">PIX - Pagamento Adiantado</div>
+                          <div className="text-sm text-green-300">Chave: (21) 97540-6476</div>
+                          <div className="text-xs text-green-200">Confirme o pagamento antes da entrega</div>
+                        </div>
                       </Label>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="card" id="card" />
-                      <Label htmlFor="card" className="flex items-center gap-2 text-white">
-                        <CreditCard className="h-4 w-4" />
-                        Cartão (na entrega)
-                      </Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
+                    
+                    <div className="flex items-center space-x-2 bg-gradient-to-r from-yellow-500/10 to-yellow-600/10 p-4 rounded-lg border border-yellow-400/30">
                       <RadioGroupItem value="money" id="money" />
-                      <Label htmlFor="money" className="flex items-center gap-2 text-white">
+                      <Label htmlFor="money" className="flex items-center gap-2 text-white flex-1">
                         <Banknote className="h-4 w-4" />
-                        Dinheiro (na entrega)
+                        <div>
+                          <div className="font-semibold">Dinheiro na Entrega</div>
+                          <div className="text-sm text-yellow-300">Pagamento direto com o entregador</div>
+                          <div className="text-xs text-yellow-200">Tenha o valor exato se possível</div>
+                        </div>
                       </Label>
                     </div>
                   </RadioGroup>

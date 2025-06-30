@@ -82,14 +82,12 @@ const OrderCart: React.FC<OrderCartProps> = ({
                 <div className="flex-1">
                   <h4 className="font-bold text-white leading-tight mb-1">{item.name}</h4>
                   
-                  {/* Special Offer Badge */}
                   {item.isSpecialOffer && (
                     <Badge className="bg-gradient-to-r from-green-600 to-green-500 text-white text-xs mb-2">
                       🎉 Oferta Especial
                     </Badge>
                   )}
                   
-                  {/* Size Display */}
                   {item.selectedOptions?.size && (
                     <div className="text-xs text-orange-300 bg-orange-500/10 px-2 py-1 rounded-lg inline-block">
                       📏 {item.selectedOptions.size.name}
@@ -186,13 +184,10 @@ const OrderCart: React.FC<OrderCartProps> = ({
           <p className="text-sm text-slate-300 mb-3 font-semibold">💳 Formas de pagamento aceitas:</p>
           <div className="flex justify-center gap-3 flex-wrap">
             <Badge variant="outline" className="text-sm border-green-400/50 text-green-300 bg-green-500/10 px-3 py-1">
-              🏦 PIX
-            </Badge>
-            <Badge variant="outline" className="text-sm border-blue-400/50 text-blue-300 bg-blue-500/10 px-3 py-1">
-              💳 Cartão
+              🏦 PIX (Antecipado)
             </Badge>
             <Badge variant="outline" className="text-sm border-yellow-400/50 text-yellow-300 bg-yellow-500/10 px-3 py-1">
-              💵 Dinheiro
+              💵 Dinheiro (Entrega)
             </Badge>
           </div>
         </div>
