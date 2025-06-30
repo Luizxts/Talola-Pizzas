@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -51,7 +50,7 @@ interface Stats {
 
 const StaffDashboard = () => {
   const navigate = useNavigate();
-  const { storeStatus, toggleStoreStatus } = useStoreStatus();
+  const { storeStatus, toggleStoreStatus, isOpen } = useStoreStatus();
   const [orders, setOrders] = useState<Order[]>([]);
   const [stats, setStats] = useState<Stats>({
     pending: 0,
@@ -343,30 +342,34 @@ const StaffDashboard = () => {
                 T
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-white">PAINEL ADMINISTRATIVO</h1>
+                <h1 className="text-2xl font-bold text-white">TALOLA PIZZA - PAINEL</h1>
                 <p className="text-orange-300">Gestão de Pedidos</p>
               </div>
             </div>
             <div className="flex items-center space-x-4">
-              <Button
-                onClick={() => setShowStoreToggle(!showStoreToggle)}
-                variant="ghost"
-                className="text-white hover:text-orange-300"
-              >
-                {showStoreToggle ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-              </Button>
-              {showStoreToggle && (
+              {/* Status da Loja */}
+              <div className="flex items-center space-x-3">
+                <div className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold ${
+                  isOpen 
+                    ? 'bg-green-600/20 text-green-300 border border-green-500/50' 
+                    : 'bg-red-600/20 text-red-300 border border-red-500/50'
+                }`}>
+                  <div className={`w-3 h-3 rounded-full ${
+                    isOpen ? 'bg-green-400 animate-pulse' : 'bg-red-400'
+                  }`}></div>
+                  {isOpen ? '🟢 ABERTA' : '🔴 FECHADA'}
+                </div>
                 <Button
                   onClick={() => toggleStoreStatus('Staff')}
                   className={`${
-                    storeStatus?.is_open 
-                      ? 'bg-green-600 hover:bg-green-700' 
-                      : 'bg-red-600 hover:bg-red-700'
-                  } text-white`}
+                    isOpen 
+                      ? 'bg-red-600 hover:bg-red-700' 
+                      : 'bg-green-600 hover:bg-green-700'
+                  } text-white font-bold`}
                 >
-                  {storeStatus?.is_open ? 'Fechar Loja' : 'Abrir Loja'}
+                  {isOpen ? 'Fechar Loja' : 'Abrir Loja'}
                 </Button>
-              )}
+              </div>
               <Button
                 onClick={handleLogout}
                 variant="ghost"
@@ -522,24 +525,39 @@ const StaffDashboard = () => {
                           <div className="flex-shrink-0">
                             <div className="text-right mb-4">
                               <p className="text-2xl font-bold text-green-400">{formatPrice(order.total)}</p>
-                              <p className="text-sm text-orange-200">{order.payment_method}</p>
-                              <Badge className={
-                                order.payment_status === 'paid' 
-                                  ? 'bg-green-600 text-white' 
-                                  : 'bg-yellow-600 text-white'
-                              }>
-                                {order.payment_status === 'paid' ? 'Pago' : 'Pendente'}
-                              </Badge>
+                              <div className="flex items-center gap-2 justify-end">
+                                <Badge className={
+                                  order.payment_method === 'PIX' 
+                                    ? 'bg-blue-600 text-white' 
+                                    : 'bg-yellow-600 text-white'
+                                }>
+                                  {order.payment_method === 'PIX' ? '💳 PIX' : '💵 Dinheiro'}
+                                </Badge>
+                                <Badge className={
+                                  order.payment_status === 'paid' 
+                                    ? 'bg-green-600 text-white' 
+                                    : order.payment_method === 'PIX'
+                                    ? 'bg-orange-600 text-white'
+                                    : 'bg-gray-600 text-white'
+                                }>
+                                  {order.payment_status === 'paid' 
+                                    ? '✅ Pago' 
+                                    : order.payment_method === 'PIX'
+                                    ? '⏳ Aguardando PIX'
+                                    : '💵 Pagar na Entrega'
+                                  }
+                                </Badge>
+                              </div>
                             </div>
                             
                             <div className="flex flex-col space-y-2">
-                              {order.payment_status !== 'paid' && (
+                              {order.payment_status !== 'paid' && order.payment_method === 'PIX' && (
                                 <Button
                                   onClick={() => confirmPayment(order.id)}
                                   size="sm"
                                   className="bg-green-600 hover:bg-green-700"
                                 >
-                                  Confirmar Pagamento
+                                  Confirmar PIX
                                 </Button>
                               )}
                               

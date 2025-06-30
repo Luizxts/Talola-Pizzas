@@ -25,15 +25,16 @@ export const useStoreStatus = () => {
         .single();
 
       if (error && error.code !== 'PGRST116') {
-        throw error;
+        console.error('Erro ao buscar status da loja:', error);
+        return;
       }
 
       if (data) {
         setStoreStatus(data as StoreStatus);
       } else {
-        // Se não existe configuração, criar uma padrão (aberta)
+        // Se não existe configuração, criar uma padrão (fechada por segurança)
         const defaultStatus = {
-          is_open: true,
+          is_open: false,
           opening_time: '18:00',
           closing_time: '00:00',
           last_updated: new Date().toISOString(),
@@ -46,7 +47,10 @@ export const useStoreStatus = () => {
           .select()
           .single();
 
-        if (insertError) throw insertError;
+        if (insertError) {
+          console.error('Erro ao criar configuração padrão:', insertError);
+          return;
+        }
         setStoreStatus(newData as StoreStatus);
       }
     } catch (error) {
@@ -76,7 +80,10 @@ export const useStoreStatus = () => {
       if (error) throw error;
 
       setStoreStatus(data as StoreStatus);
-      toast.success(`Loja ${newStatus ? 'aberta' : 'fechada'} com sucesso!`);
+      toast.success(`Loja ${newStatus ? 'aberta' : 'fechada'} com sucesso!`, {
+        description: `Status alterado por: ${updatedBy}`,
+        duration: 3000,
+      });
     } catch (error) {
       console.error('Erro ao alterar status da loja:', error);
       toast.error('Erro ao alterar status da loja');
@@ -97,6 +104,7 @@ export const useStoreStatus = () => {
           table: 'store_settings'
         },
         (payload) => {
+          console.log('Status da loja atualizado:', payload);
           if (payload.new) {
             setStoreStatus(payload.new as StoreStatus);
           }
@@ -111,7 +119,10 @@ export const useStoreStatus = () => {
 
   const checkStoreInteraction = () => {
     if (!storeStatus?.is_open) {
-      toast.error('Loja fechada! Entre em contato pelo WhatsApp (21) 97540-6476');
+      toast.error('Loja fechada! Entre em contato pelo WhatsApp (21) 97540-6476', {
+        description: 'Funcionamos das 18:00 às 00:00',
+        duration: 5000,
+      });
       return false;
     }
     return true;
