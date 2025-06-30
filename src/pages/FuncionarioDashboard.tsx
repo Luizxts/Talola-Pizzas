@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -15,11 +16,10 @@ import {
   Package, 
   LogOut,
   Filter,
-  Eye,
-  EyeOff
+  Bell,
+  TrendingUp
 } from 'lucide-react';
 import { toast } from 'sonner';
-import StoreHoursConfig from '@/components/StoreHoursConfig';
 
 interface Order {
   id: string;
@@ -47,7 +47,7 @@ interface Stats {
 
 const FuncionarioDashboard = () => {
   const navigate = useNavigate();
-  const { storeStatus, toggleStoreStatus } = useStoreStatus();
+  const { storeStatus, toggleStoreStatus, isOpen } = useStoreStatus();
   const [orders, setOrders] = useState<Order[]>([]);
   const [stats, setStats] = useState<Stats>({
     pending: 0,
@@ -62,7 +62,7 @@ const FuncionarioDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [selectedPeriod, setSelectedPeriod] = useState('today');
   const [selectedStatus, setSelectedStatus] = useState('all');
-  const [showStoreToggle, setShowStoreToggle] = useState(false);
+  const [newOrderSound] = useState(new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmBjFQAA'));
 
   useEffect(() => {
     // Verificar se funcionário está autenticado
@@ -85,7 +85,17 @@ const FuncionarioDashboard = () => {
           schema: 'public',
           table: 'orders'
         },
-        () => {
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            // Tocar som para novos pedidos
+            newOrderSound.play().catch(() => {
+              // Som pode falhar em alguns browsers, ignorar erro
+            });
+            toast.success('🔔 Novo pedido recebido!', {
+              description: `Pedido #${payload.new.id?.slice(-8)}`,
+              duration: 5000,
+            });
+          }
           fetchOrders();
           fetchStats();
         }
@@ -95,7 +105,7 @@ const FuncionarioDashboard = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [selectedPeriod, selectedStatus, navigate]);
+  }, [selectedPeriod, selectedStatus, navigate, newOrderSound]);
 
   const fetchOrders = async () => {
     try {
@@ -224,7 +234,10 @@ const FuncionarioDashboard = () => {
 
       if (error) throw error;
 
-      toast.success('Status do pedido atualizado!');
+      toast.success('✅ Status do pedido atualizado!', {
+        description: `Pedido #${orderId.slice(-8)} agora está: ${getStatusInfo(newStatus).text}`,
+        duration: 3000,
+      });
       fetchOrders();
       fetchStats();
     } catch (error: any) {
@@ -242,7 +255,10 @@ const FuncionarioDashboard = () => {
 
       if (error) throw error;
 
-      toast.success('Pagamento confirmado!');
+      toast.success('💰 Pagamento confirmado!', {
+        description: `PIX confirmado para pedido #${orderId.slice(-8)}`,
+        duration: 3000,
+      });
       fetchOrders();
     } catch (error: any) {
       console.error('Erro ao confirmar pagamento:', error);
@@ -252,7 +268,23 @@ const FuncionarioDashboard = () => {
 
   const handleLogout = () => {
     localStorage.removeItem('funcionario_authenticated');
+    toast.info('Logout realizado com sucesso!');
     navigate('/funcionario-login');
+  };
+
+  const handleToggleStore = async () => {
+    const wasOpen = isOpen;
+    await toggleStoreStatus('Funcionário');
+    
+    toast.success(
+      wasOpen ? '🔴 Loja fechada!' : '🟢 Loja aberta!',
+      {
+        description: wasOpen 
+          ? 'Não receberemos novos pedidos' 
+          : 'Estamos prontos para receber pedidos!',
+        duration: 4000,
+      }
+    );
   };
 
   const getStatusInfo = (status: string) => {
@@ -330,7 +362,7 @@ const FuncionarioDashboard = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-orange-500 via-red-600 to-pink-700 flex items-center justify-center">
-        <div className="text-white text-xl">Carregando...</div>
+        <div className="text-white text-xl">Carregando painel...</div>
       </div>
     );
   }
@@ -347,33 +379,37 @@ const FuncionarioDashboard = () => {
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-white">PAINEL FUNCIONÁRIO</h1>
-                <p className="text-orange-300">Gestão de Pedidos</p>
+                <p className="text-orange-300">Gestão de Pedidos - Talola Pizza</p>
               </div>
             </div>
             <div className="flex items-center space-x-4">
-              <Button
-                onClick={() => setShowStoreToggle(!showStoreToggle)}
-                variant="ghost"
-                className="text-white hover:text-orange-300"
-              >
-                {showStoreToggle ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-              </Button>
-              {showStoreToggle && (
+              {/* Status da Loja com controle melhorado */}
+              <div className="flex items-center space-x-3">
+                <div className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold transition-all duration-300 ${
+                  isOpen 
+                    ? 'bg-green-600/20 text-green-300 border border-green-500/50 shadow-lg shadow-green-500/25' 
+                    : 'bg-red-600/20 text-red-300 border border-red-500/50 shadow-lg shadow-red-500/25'
+                }`}>
+                  <div className={`w-3 h-3 rounded-full ${
+                    isOpen ? 'bg-green-400 animate-pulse' : 'bg-red-400'
+                  }`}></div>
+                  {isOpen ? '🟢 LOJA ABERTA' : '🔴 LOJA FECHADA'}
+                </div>
                 <Button
-                  onClick={() => toggleStoreStatus('Funcionário')}
+                  onClick={handleToggleStore}
                   className={`${
-                    storeStatus?.is_open 
-                      ? 'bg-green-600 hover:bg-green-700' 
-                      : 'bg-red-600 hover:bg-red-700'
-                  } text-white`}
+                    isOpen 
+                      ? 'bg-red-600 hover:bg-red-700 shadow-lg shadow-red-500/25' 
+                      : 'bg-green-600 hover:bg-green-700 shadow-lg shadow-green-500/25'
+                  } text-white font-bold transition-all duration-300 transform hover:scale-105`}
                 >
-                  {storeStatus?.is_open ? 'Fechar Loja' : 'Abrir Loja'}
+                  {isOpen ? 'Fechar Loja' : 'Abrir Loja'}
                 </Button>
-              )}
+              </div>
               <Button
                 onClick={handleLogout}
                 variant="ghost"
-                className="text-white hover:text-orange-300"
+                className="text-white hover:text-orange-300 hover:bg-white/10"
               >
                 <LogOut className="h-5 w-5 mr-2" />
                 Sair
@@ -385,59 +421,80 @@ const FuncionarioDashboard = () => {
 
       <div className="container mx-auto px-4 py-8">
         <div className="space-y-8">
-          {/* Estatísticas */}
+          {/* Estatísticas Melhoradas */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <Card className="bg-black/60 backdrop-blur-sm border-white/20">
+            <Card className="bg-black/60 backdrop-blur-sm border-white/20 hover:border-yellow-400/50 transition-all duration-300">
               <CardContent className="p-6">
                 <div className="flex items-center">
-                  <Package className="h-8 w-8 text-yellow-400" />
+                  <div className="p-3 bg-yellow-500/20 rounded-xl">
+                    <Package className="h-8 w-8 text-yellow-400" />
+                  </div>
                   <div className="ml-4">
                     <p className="text-sm text-orange-200">Pedidos Pendentes</p>
-                    <p className="text-2xl font-bold text-white">{stats.pending}</p>
+                    <p className="text-3xl font-bold text-white">{stats.pending}</p>
+                    {stats.pending > 0 && (
+                      <div className="flex items-center text-yellow-400 text-xs mt-1">
+                        <Bell className="h-3 w-3 mr-1 animate-pulse" />
+                        Requer atenção
+                      </div>
+                    )}
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-black/60 backdrop-blur-sm border-white/20">
+            <Card className="bg-black/60 backdrop-blur-sm border-white/20 hover:border-orange-400/50 transition-all duration-300">
               <CardContent className="p-6">
                 <div className="flex items-center">
-                  <ChefHat className="h-8 w-8 text-orange-400" />
+                  <div className="p-3 bg-orange-500/20 rounded-xl">
+                    <ChefHat className="h-8 w-8 text-orange-400" />
+                  </div>
                   <div className="ml-4">
                     <p className="text-sm text-orange-200">Em Preparo</p>
-                    <p className="text-2xl font-bold text-white">{stats.preparing}</p>
+                    <p className="text-3xl font-bold text-white">{stats.preparing}</p>
+                    <div className="text-orange-300 text-xs mt-1">
+                      Na cozinha
+                    </div>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-black/60 backdrop-blur-sm border-white/20">
+            <Card className="bg-black/60 backdrop-blur-sm border-white/20 hover:border-purple-400/50 transition-all duration-300">
               <CardContent className="p-6">
                 <div className="flex items-center">
-                  <Truck className="h-8 w-8 text-purple-400" />
+                  <div className="p-3 bg-purple-500/20 rounded-xl">
+                    <Truck className="h-8 w-8 text-purple-400" />
+                  </div>
                   <div className="ml-4">
                     <p className="text-sm text-orange-200">Para Entrega</p>
-                    <p className="text-2xl font-bold text-white">{stats.ready + stats.delivering}</p>
+                    <p className="text-3xl font-bold text-white">{stats.ready + stats.delivering}</p>
+                    <div className="text-purple-300 text-xs mt-1">
+                      Prontos + Saindo
+                    </div>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-black/60 backdrop-blur-sm border-white/20">
+            <Card className="bg-black/60 backdrop-blur-sm border-white/20 hover:border-green-400/50 transition-all duration-300">
               <CardContent className="p-6">
                 <div className="flex items-center">
-                  <DollarSign className="h-8 w-8 text-green-400" />
+                  <div className="p-3 bg-green-500/20 rounded-xl">
+                    <DollarSign className="h-8 w-8 text-green-400" />
+                  </div>
                   <div className="ml-4">
                     <p className="text-sm text-orange-200">Receita Hoje</p>
                     <p className="text-2xl font-bold text-white">{formatPrice(stats.todayrevenue)}</p>
+                    <div className="flex items-center text-green-300 text-xs mt-1">
+                      <TrendingUp className="h-3 w-3 mr-1" />
+                      {stats.completed} pedidos
+                    </div>
                   </div>
                 </div>
               </CardContent>
             </Card>
           </div>
-
-          {/* Configuração de Horários */}
-          <StoreHoursConfig />
 
           {/* Filtros */}
           <Card className="bg-black/60 backdrop-blur-sm border-white/20">
@@ -493,33 +550,39 @@ const FuncionarioDashboard = () => {
             <CardContent>
               <div className="space-y-4">
                 {orders.length === 0 ? (
-                  <p className="text-center text-orange-200 py-8">Nenhum pedido encontrado</p>
+                  <div className="text-center text-orange-200 py-12">
+                    <Package className="h-16 w-16 text-orange-400 mx-auto mb-4 opacity-50" />
+                    <p className="text-xl font-semibold mb-2">Nenhum pedido encontrado</p>
+                    <p className="text-sm">Os novos pedidos aparecerão aqui automaticamente</p>
+                  </div>
                 ) : (
                   orders.map((order) => {
                     const statusInfo = getStatusInfo(order.status);
                     const StatusIcon = statusInfo.icon;
                     
                     return (
-                      <div key={order.id} className="bg-white/5 rounded-lg p-4 border border-white/10">
+                      <div key={order.id} className="bg-white/5 rounded-lg p-4 border border-white/10 hover:border-white/20 transition-all duration-300">
                         <div className="flex flex-col lg:flex-row lg:items-center justify-between space-y-4 lg:space-y-0">
                           <div className="flex-1">
                             <div className="flex items-center space-x-3 mb-2">
-                              <Badge className={`${statusInfo.color} text-white`}>
+                              <Badge className={`${statusInfo.color} text-white shadow-lg`}>
                                 <StatusIcon className="h-4 w-4 mr-1" />
                                 {statusInfo.text}
                               </Badge>
-                              <span className="text-white font-mono">#{order.id.slice(-8)}</span>
+                              <span className="text-white font-mono bg-white/10 px-2 py-1 rounded">
+                                #{order.id.slice(-8)}
+                              </span>
                               <span className="text-orange-200">{formatTime(order.created_at)}</span>
                             </div>
                             
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                               <div>
-                                <p className="text-orange-200">Cliente:</p>
+                                <p className="text-orange-200 font-semibold">Cliente:</p>
                                 <p className="text-white font-medium">{order.customer_name}</p>
                                 <p className="text-gray-300">{order.customer_phone}</p>
                               </div>
                               <div>
-                                <p className="text-orange-200">Endereço:</p>
+                                <p className="text-orange-200 font-semibold">Endereço:</p>
                                 <p className="text-white">{order.customer_address}</p>
                               </div>
                             </div>
@@ -527,15 +590,19 @@ const FuncionarioDashboard = () => {
                           
                           <div className="flex-shrink-0">
                             <div className="text-right mb-4">
-                              <p className="text-2xl font-bold text-green-400">{formatPrice(order.total)}</p>
-                              <p className="text-sm text-orange-200">{order.payment_method}</p>
-                              <Badge className={
-                                order.payment_status === 'paid' 
-                                  ? 'bg-green-600 text-white' 
-                                  : 'bg-yellow-600 text-white'
-                              }>
-                                {order.payment_status === 'paid' ? 'Pago' : 'Pendente'}
-                              </Badge>
+                              <p className="text-3xl font-bold text-green-400">{formatPrice(order.total)}</p>
+                              <div className="flex items-center gap-2 justify-end">
+                                <Badge className="bg-blue-600 text-white">
+                                  💳 PIX
+                                </Badge>
+                                <Badge className={
+                                  order.payment_status === 'paid' 
+                                    ? 'bg-green-600 text-white' 
+                                    : 'bg-orange-600 text-white'
+                                }>
+                                  {order.payment_status === 'paid' ? '✅ Pago' : '⏳ Aguardando'}
+                                </Badge>
+                              </div>
                             </div>
                             
                             <div className="flex flex-col space-y-2">
@@ -543,9 +610,9 @@ const FuncionarioDashboard = () => {
                                 <Button
                                   onClick={() => confirmPayment(order.id)}
                                   size="sm"
-                                  className="bg-green-600 hover:bg-green-700"
+                                  className="bg-green-600 hover:bg-green-700 shadow-lg"
                                 >
-                                  Confirmar Pagamento
+                                  Confirmar PIX
                                 </Button>
                               )}
                               
@@ -553,7 +620,7 @@ const FuncionarioDashboard = () => {
                                 <Button
                                   onClick={() => updateOrderStatus(order.id, statusInfo.nextStatus!)}
                                   size="sm"
-                                  className="bg-blue-600 hover:bg-blue-700"
+                                  className="bg-blue-600 hover:bg-blue-700 shadow-lg"
                                 >
                                   {statusInfo.nextText}
                                 </Button>

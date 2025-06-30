@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Smartphone, Banknote, Clock } from 'lucide-react';
+import { ArrowLeft, Smartphone, Banknote, Clock, AlertTriangle, CreditCard } from 'lucide-react';
 import { toast } from 'sonner';
 import { useStoreStatus } from '@/hooks/useStoreStatus';
 import StoreStatusBanner from '@/components/StoreStatusBanner';
@@ -29,7 +29,7 @@ const Checkout = () => {
   const { checkStoreInteraction, isOpen } = useStoreStatus();
   const cartItems: CartItem[] = location.state?.cartItems || JSON.parse(localStorage.getItem('cart') || '[]');
   const total = cartItems.reduce((sum, item) => sum + item.totalPrice, 0);
-  const deliveryFee = 5.00;
+  const deliveryFee = 8.00; // Aumentada a taxa de entrega
   const finalTotal = total + deliveryFee;
 
   const [customerData, setCustomerData] = useState({
@@ -139,7 +139,7 @@ const Checkout = () => {
         total_amount: finalTotal
       };
 
-      toast.success('Pedido realizado com sucesso!');
+      toast.success('🎉 Pedido realizado com sucesso!');
       
       // Redirecionar baseado no método de pagamento
       if (customerData.paymentMethod === 'pix') {
@@ -238,7 +238,7 @@ const Checkout = () => {
                   </div>
                   <div className="flex justify-between text-white">
                     <span>Taxa de entrega:</span>
-                    <span>{formatPrice(deliveryFee)}</span>
+                    <span className="text-orange-300">{formatPrice(deliveryFee)}</span>
                   </div>
                   <div className="flex justify-between font-bold text-lg pt-2 border-t border-white/20 text-green-400">
                     <span>Total:</span>
@@ -304,44 +304,99 @@ const Checkout = () => {
                 </div>
 
                 <div>
-                  <Label className="text-white">Forma de Pagamento</Label>
+                  <Label className="text-white text-lg font-semibold">Forma de Pagamento</Label>
                   <RadioGroup
                     value={customerData.paymentMethod}
                     onValueChange={(value) => setCustomerData({...customerData, paymentMethod: value})}
-                    className="mt-2"
+                    className="mt-3 space-y-3"
                   >
-                    <div className="flex items-center space-x-2 bg-gradient-to-r from-green-500/10 to-green-600/10 p-4 rounded-lg border border-green-400/30">
-                      <RadioGroupItem value="pix" id="pix" />
-                      <Label htmlFor="pix" className="flex items-center gap-2 text-white flex-1">
-                        <Smartphone className="h-4 w-4" />
-                        <div>
-                          <div className="font-semibold">PIX - Pagamento Adiantado</div>
-                          <div className="text-sm text-green-300">Chave: (21) 97540-6476</div>
-                          <div className="text-xs text-green-200">Confirme o pagamento antes da entrega</div>
-                        </div>
-                      </Label>
+                    {/* PIX - Método Online */}
+                    <div className="relative">
+                      <div className="flex items-center space-x-2 bg-gradient-to-r from-green-500/10 to-green-600/10 p-5 rounded-lg border-2 border-green-400/50 hover:border-green-400/70 transition-all duration-300">
+                        <RadioGroupItem value="pix" id="pix" />
+                        <Label htmlFor="pix" className="flex items-center gap-3 text-white flex-1 cursor-pointer">
+                          <div className="p-2 bg-green-500/20 rounded-lg">
+                            <Smartphone className="h-6 w-6 text-green-400" />
+                          </div>
+                          <div className="flex-1">
+                            <div className="font-bold text-lg text-green-300">PIX - Pagamento Online</div>
+                            <div className="text-sm text-green-200 mt-1">
+                              📱 Chave PIX: <span className="font-mono bg-green-500/20 px-2 py-1 rounded">(21) 97540-6476</span>
+                            </div>
+                            <div className="text-xs text-green-200 mt-2 flex items-center gap-2">
+                              <Badge className="bg-green-600 text-white text-xs px-2 py-1">RECOMENDADO</Badge>
+                              Confirme o pagamento antes da entrega
+                            </div>
+                          </div>
+                        </Label>
+                      </div>
                     </div>
                     
-                    <div className="flex items-center space-x-2 bg-gradient-to-r from-yellow-500/10 to-yellow-600/10 p-4 rounded-lg border border-yellow-400/30">
-                      <RadioGroupItem value="money" id="money" />
-                      <Label htmlFor="money" className="flex items-center gap-2 text-white flex-1">
-                        <Banknote className="h-4 w-4" />
-                        <div>
-                          <div className="font-semibold">Dinheiro na Entrega</div>
-                          <div className="text-sm text-yellow-300">Pagamento direto com o entregador</div>
-                          <div className="text-xs text-yellow-200">Tenha o valor exato se possível</div>
+                    {/* Métodos Presenciais */}
+                    <div className="bg-gradient-to-r from-yellow-500/5 to-orange-500/5 p-4 rounded-lg border border-yellow-400/30">
+                      <div className="flex items-center gap-2 mb-3">
+                        <AlertTriangle className="h-5 w-5 text-yellow-400" />
+                        <span className="text-yellow-300 font-semibold">Pagamento Presencial</span>
+                      </div>
+                      <div className="text-sm text-yellow-200 mb-4">
+                        ⚠️ Os métodos abaixo só estão disponíveis para pagamento direto com o entregador
+                      </div>
+                      
+                      <div className="space-y-3">
+                        <div className="flex items-center space-x-2 bg-gradient-to-r from-yellow-500/10 to-yellow-600/10 p-4 rounded-lg border border-yellow-400/30 opacity-75">
+                          <RadioGroupItem value="money" id="money" />
+                          <Label htmlFor="money" className="flex items-center gap-3 text-white flex-1 cursor-pointer">
+                            <div className="p-2 bg-yellow-500/20 rounded-lg">
+                              <Banknote className="h-5 w-5 text-yellow-400" />
+                            </div>
+                            <div>
+                              <div className="font-semibold text-yellow-300">Dinheiro na Entrega</div>
+                              <div className="text-sm text-yellow-200">Pagamento direto com o entregador</div>
+                              <div className="text-xs text-yellow-200">💡 Tenha o valor exato se possível</div>
+                            </div>
+                          </Label>
                         </div>
-                      </Label>
+
+                        <div className="flex items-center space-x-2 bg-gradient-to-r from-blue-500/10 to-blue-600/10 p-4 rounded-lg border border-blue-400/30 opacity-75">
+                          <RadioGroupItem value="card" id="card" />
+                          <Label htmlFor="card" className="flex items-center gap-3 text-white flex-1 cursor-pointer">
+                            <div className="p-2 bg-blue-500/20 rounded-lg">
+                              <CreditCard className="h-5 w-5 text-blue-400" />
+                            </div>
+                            <div>
+                              <div className="font-semibold text-blue-300">Cartão na Entrega</div>
+                              <div className="text-sm text-blue-200">Débito ou Crédito com o entregador</div>
+                              <div className="text-xs text-blue-200">💳 Maquininha disponível</div>
+                            </div>
+                          </Label>
+                        </div>
+                      </div>
                     </div>
                   </RadioGroup>
                 </div>
 
+                {/* Aviso Importante */}
+                <div className="bg-gradient-to-r from-orange-500/10 to-red-500/10 p-4 rounded-xl border border-orange-400/30">
+                  <div className="flex items-start gap-3">
+                    <AlertTriangle className="h-5 w-5 text-orange-400 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <h4 className="font-semibold text-orange-300 mb-2">📋 Informações Importantes</h4>
+                      <ul className="text-sm text-orange-200 space-y-1">
+                        <li>• <strong>PIX:</strong> Pagamento antecipado, pedido confirmado imediatamente</li>
+                        <li>• <strong>Dinheiro/Cartão:</strong> Pagamento na entrega com o entregador</li>
+                        <li>• <strong>Taxa de entrega:</strong> R$ 8,00 para toda a região</li>
+                        <li>• <strong>Tempo estimado:</strong> 35-50 minutos após confirmação</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
                 <Button 
                   type="submit" 
-                  className="w-full bg-green-600 hover:bg-green-700 text-white text-lg py-3" 
+                  className="w-full bg-green-600 hover:bg-green-700 text-white text-lg py-4 font-bold shadow-lg hover:shadow-xl transition-all duration-300" 
                   disabled={loading || !isOpen}
                 >
-                  {loading ? 'Processando...' : 'Finalizar Pedido'}
+                  {loading ? '⏳ Processando...' : '🍕 Finalizar Pedido'}
                 </Button>
               </form>
             </CardContent>

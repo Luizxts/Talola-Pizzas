@@ -80,9 +80,17 @@ export const useStoreStatus = () => {
       if (error) throw error;
 
       setStoreStatus(data as StoreStatus);
-      toast.success(`Loja ${newStatus ? 'aberta' : 'fechada'} com sucesso!`, {
-        description: `Status alterado por: ${updatedBy}`,
-        duration: 3000,
+      
+      // Toast melhorado com mais informações
+      const statusText = newStatus ? 'aberta' : 'fechada';
+      const emoji = newStatus ? '🟢' : '🔴';
+      const description = newStatus 
+        ? 'Estamos prontos para receber pedidos!' 
+        : 'Não receberemos novos pedidos no momento';
+        
+      toast.success(`${emoji} Loja ${statusText}!`, {
+        description,
+        duration: 4000,
       });
     } catch (error) {
       console.error('Erro ao alterar status da loja:', error);
@@ -107,6 +115,22 @@ export const useStoreStatus = () => {
           console.log('Status da loja atualizado:', payload);
           if (payload.new) {
             setStoreStatus(payload.new as StoreStatus);
+            
+            // Notificação para todos os usuários quando o status muda
+            const isOpen = (payload.new as any).is_open;
+            if (payload.eventType === 'UPDATE') {
+              const message = isOpen ? 
+                '🟢 Loja agora está ABERTA!' : 
+                '🔴 Loja agora está FECHADA!';
+              const description = isOpen ?
+                'Você já pode fazer pedidos online!' :
+                'Pedidos serão aceitos quando reabrirmos';
+                
+              toast.info(message, {
+                description,
+                duration: 5000,
+              });
+            }
           }
         }
       )
@@ -119,9 +143,13 @@ export const useStoreStatus = () => {
 
   const checkStoreInteraction = () => {
     if (!storeStatus?.is_open) {
-      toast.error('Loja fechada! Entre em contato pelo WhatsApp (21) 97540-6476', {
-        description: 'Funcionamos das 18:00 às 00:00',
+      toast.error('🔴 Loja fechada!', {
+        description: 'Entre em contato pelo WhatsApp: (21) 97540-6476',
         duration: 5000,
+        action: {
+          label: 'WhatsApp',
+          onClick: () => window.open('https://wa.me/5521975406476', '_blank')
+        }
       });
       return false;
     }

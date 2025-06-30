@@ -4,13 +4,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { ShoppingCart, Trash2, Minus, Plus, CreditCard, Truck } from 'lucide-react';
+import { ShoppingCart, Trash2, Minus, Plus, CreditCard, Truck, Star, Zap } from 'lucide-react';
 
 interface CartItem {
   id: string;
   name: string;
   basePrice: number;
-  quantity: number;
+  quantity: number;  
   totalPrice: number;
   selectedOptions?: Record<string, any>;
   isSpecialOffer?: boolean;
@@ -37,8 +37,13 @@ const OrderCart: React.FC<OrderCartProps> = ({
   };
 
   const subtotal = items.reduce((sum, item) => sum + item.totalPrice, 0);
-  const deliveryFee = 5.00;
+  const deliveryFee = 8.00; // Taxa de entrega atualizada
   const total = subtotal + deliveryFee;
+
+  // Calcular desconto por quantidade
+  const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
+  const volumeDiscount = totalItems >= 3 ? subtotal * 0.05 : 0; // 5% desconto para 3+ itens
+  const finalTotal = total - volumeDiscount;
 
   if (items.length === 0) {
     return (
@@ -48,10 +53,16 @@ const OrderCart: React.FC<OrderCartProps> = ({
             <div className="absolute inset-0 bg-gradient-to-r from-orange-500/20 to-red-500/20 rounded-full blur-xl"></div>
             <ShoppingCart className="relative mx-auto h-16 w-16 text-orange-400 mb-6" />
           </div>
-          <h3 className="text-xl font-bold text-white mb-2">Seu carrinho está vazio</h3>
-          <p className="text-slate-300 leading-relaxed">
-            Adicione pizzas deliciosas do nosso cardápio e monte seu pedido perfeito!
+          <h3 className="text-xl font-bold text-white mb-2">Carrinho Vazio</h3>
+          <p className="text-slate-300 leading-relaxed mb-4">
+            Adicione nossas deliciosas pizzas e monte seu pedido perfeito!
           </p>
+          <div className="bg-gradient-to-r from-orange-500/10 to-red-500/10 p-4 rounded-lg border border-orange-400/30">
+            <div className="flex items-center justify-center gap-2 text-orange-300 text-sm">
+              <Star className="h-4 w-4" />
+              <span>Promoção: 5% OFF em pedidos com 3+ pizzas</span>
+            </div>
+          </div>
         </CardContent>
       </Card>
     );
@@ -67,13 +78,23 @@ const OrderCart: React.FC<OrderCartProps> = ({
           <div>
             <div className="text-xl font-bold">Seu Pedido</div>
             <div className="text-sm text-slate-300 font-normal">
-              {items.length} {items.length === 1 ? 'item' : 'itens'}
+              {items.length} {items.length === 1 ? 'item' : 'itens'} • {totalItems} {totalItems === 1 ? 'pizza' : 'pizzas'}
             </div>
           </div>
         </CardTitle>
       </CardHeader>
       
       <CardContent className="space-y-6 p-6">
+        {/* Promoção de Volume */}
+        {totalItems >= 3 && (
+          <div className="bg-gradient-to-r from-green-500/10 to-green-600/10 p-3 rounded-lg border border-green-400/30 animate-pulse">
+            <div className="flex items-center gap-2 text-green-300 text-sm">
+              <Zap className="h-4 w-4" />
+              <span className="font-semibold">🎉 Promoção Ativa: 5% OFF no seu pedido!</span>
+            </div>
+          </div>
+        )}
+
         {/* Cart Items */}
         <div className="space-y-4 max-h-96 overflow-y-auto custom-scrollbar">
           {items.map((item, index) => (
@@ -141,7 +162,7 @@ const OrderCart: React.FC<OrderCartProps> = ({
         {/* Order Summary */}
         <div className="space-y-3 bg-slate-800/30 p-4 rounded-xl border border-slate-700/50">
           <div className="flex justify-between text-slate-300">
-            <span>Subtotal</span>
+            <span>Subtotal ({totalItems} {totalItems === 1 ? 'pizza' : 'pizzas'})</span>
             <span className="font-semibold">{formatPrice(subtotal)}</span>
           </div>
           <div className="flex justify-between text-slate-300">
@@ -149,13 +170,27 @@ const OrderCart: React.FC<OrderCartProps> = ({
               <Truck className="h-4 w-4" />
               Taxa de entrega
             </span>
-            <span className="font-semibold">{formatPrice(deliveryFee)}</span>
+            <span className="font-semibold text-orange-300">{formatPrice(deliveryFee)}</span>
           </div>
+          {volumeDiscount > 0 && (
+            <div className="flex justify-between text-green-400">
+              <span className="flex items-center gap-2">
+                <Zap className="h-4 w-4" />
+                Desconto (5% OFF)
+              </span>
+              <span className="font-semibold">-{formatPrice(volumeDiscount)}</span>
+            </div>
+          )}
           <Separator className="bg-slate-600/50" />
           <div className="flex justify-between font-bold text-xl">
             <span className="text-white">Total</span>
-            <span className="text-green-400 text-2xl">{formatPrice(total)}</span>
+            <span className="text-green-400 text-2xl">{formatPrice(finalTotal)}</span>
           </div>
+          {volumeDiscount > 0 && (
+            <div className="text-center text-green-300 text-sm">
+              🎉 Você economizou {formatPrice(volumeDiscount)}!
+            </div>
+          )}
         </div>
 
         {/* Checkout Button */}
@@ -172,23 +207,43 @@ const OrderCart: React.FC<OrderCartProps> = ({
           {isStoreOpen ? (
             <div className="flex items-center justify-center gap-2">
               <CreditCard className="h-5 w-5" />
-              Finalizar Pedido - {formatPrice(total)}
+              Finalizar Pedido - {formatPrice(finalTotal)}
             </div>
           ) : (
-            'Loja Fechada'
+            '🔴 Loja Fechada'
           )}
         </Button>
 
-        {/* Payment Methods */}
+        {/* Payment Methods Info */}
         <div className="text-center p-4 bg-slate-800/20 rounded-xl border border-slate-700/30">
-          <p className="text-sm text-slate-300 mb-3 font-semibold">💳 Formas de pagamento aceitas:</p>
-          <div className="flex justify-center gap-3 flex-wrap">
-            <Badge variant="outline" className="text-sm border-green-400/50 text-green-300 bg-green-500/10 px-3 py-1">
-              🏦 PIX (Antecipado)
+          <p className="text-sm text-slate-300 mb-3 font-semibold">💳 Formas de pagamento:</p>
+          <div className="space-y-2">
+            <Badge variant="outline" className="text-sm border-green-400/50 text-green-300 bg-green-500/10 px-3 py-1 block">
+              🏦 PIX - Pagamento Online (Recomendado)
             </Badge>
-            <Badge variant="outline" className="text-sm border-yellow-400/50 text-yellow-300 bg-yellow-500/10 px-3 py-1">
-              💵 Dinheiro (Entrega)
-            </Badge>
+            <div className="flex justify-center gap-2 flex-wrap">
+              <Badge variant="outline" className="text-xs border-yellow-400/50 text-yellow-300 bg-yellow-500/10 px-2 py-1">
+                💵 Dinheiro (Entrega)
+              </Badge>
+              <Badge variant="outline" className="text-xs border-blue-400/50 text-blue-300 bg-blue-500/10 px-2 py-1">
+                💳 Cartão (Entrega)
+              </Badge>
+            </div>
+          </div>
+        </div>
+
+        {/* Quick Stats */}
+        <div className="grid grid-cols-2 gap-3 text-center">
+          <div className="bg-orange-500/10 p-3 rounded-lg border border-orange-400/30">
+            <div className="text-orange-400 text-xs font-semibold">TEMPO ESTIMADO</div>
+            <div className="text-white font-bold">35-50 min</div>
+          </div>
+          <div className="bg-green-500/10 p-3 rounded-lg border border-green-400/30">
+            <div className="text-green-400 text-xs font-semibold">AVALIAÇÃO</div>
+            <div className="text-white font-bold flex items-center justify-center gap-1">
+              <Star className="h-4 w-4 fill-current" />
+              4.8/5
+            </div>
           </div>
         </div>
       </CardContent>
