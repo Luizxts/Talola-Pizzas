@@ -2051,6 +2051,36 @@ export type Database = {
         }
         Relationships: []
       }
+      staff_users: {
+        Row: {
+          auth_user_id: string | null
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          role: string
+          updated_at: string | null
+        }
+        Insert: {
+          auth_user_id?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          role?: string
+          updated_at?: string | null
+        }
+        Update: {
+          auth_user_id?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          role?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       store_settings: {
         Row: {
           closing_time: string | null
@@ -2822,6 +2852,10 @@ export type Database = {
       calculate_withdrawal_fee: {
         Args: { player_level: number; withdrawal_amount: number }
         Returns: number
+      }
+      is_staff_user: {
+        Args: { user_id: string }
+        Returns: boolean
       }
       is_store_open: {
         Args: Record<PropertyKey, never>
