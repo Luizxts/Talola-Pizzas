@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -14,12 +13,17 @@ import {
   Truck, 
   DollarSign, 
   Package, 
+  TrendingUp,
   LogOut,
+  Calendar,
   Filter,
-  Bell,
-  TrendingUp
+  Star,
+  Users,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { toast } from 'sonner';
+import StoreHoursConfig from '@/components/StoreHoursConfig';
 
 interface Order {
   id: string;
@@ -62,16 +66,8 @@ const FuncionarioDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [selectedPeriod, setSelectedPeriod] = useState('today');
   const [selectedStatus, setSelectedStatus] = useState('all');
-  const [newOrderSound] = useState(new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmBjFQAA'));
 
   useEffect(() => {
-    // Verificar se funcionário está autenticado
-    const isAuthenticated = localStorage.getItem('funcionario_authenticated');
-    if (!isAuthenticated) {
-      navigate('/funcionario-login');
-      return;
-    }
-
     fetchOrders();
     fetchStats();
 
@@ -85,17 +81,7 @@ const FuncionarioDashboard = () => {
           schema: 'public',
           table: 'orders'
         },
-        (payload) => {
-          if (payload.eventType === 'INSERT') {
-            // Tocar som para novos pedidos
-            newOrderSound.play().catch(() => {
-              // Som pode falhar em alguns browsers, ignorar erro
-            });
-            toast.success('🔔 Novo pedido recebido!', {
-              description: `Pedido #${payload.new.id?.slice(-8)}`,
-              duration: 5000,
-            });
-          }
+        () => {
           fetchOrders();
           fetchStats();
         }
@@ -105,7 +91,7 @@ const FuncionarioDashboard = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [selectedPeriod, selectedStatus, navigate, newOrderSound]);
+  }, [selectedPeriod, selectedStatus]);
 
   const fetchOrders = async () => {
     try {
@@ -234,10 +220,7 @@ const FuncionarioDashboard = () => {
 
       if (error) throw error;
 
-      toast.success('✅ Status do pedido atualizado!', {
-        description: `Pedido #${orderId.slice(-8)} agora está: ${getStatusInfo(newStatus).text}`,
-        duration: 3000,
-      });
+      toast.success('Status do pedido atualizado!');
       fetchOrders();
       fetchStats();
     } catch (error: any) {
@@ -255,10 +238,7 @@ const FuncionarioDashboard = () => {
 
       if (error) throw error;
 
-      toast.success('💰 Pagamento confirmado!', {
-        description: `PIX confirmado para pedido #${orderId.slice(-8)}`,
-        duration: 3000,
-      });
+      toast.success('Pagamento confirmado!');
       fetchOrders();
     } catch (error: any) {
       console.error('Erro ao confirmar pagamento:', error);
@@ -267,24 +247,8 @@ const FuncionarioDashboard = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('funcionario_authenticated');
-    toast.info('Logout realizado com sucesso!');
+    localStorage.removeItem('staff_authenticated');
     navigate('/funcionario-login');
-  };
-
-  const handleToggleStore = async () => {
-    const wasOpen = isOpen;
-    await toggleStoreStatus('Funcionário');
-    
-    toast.success(
-      wasOpen ? '🔴 Loja fechada!' : '🟢 Loja aberta!',
-      {
-        description: wasOpen 
-          ? 'Não receberemos novos pedidos' 
-          : 'Estamos prontos para receber pedidos!',
-        duration: 4000,
-      }
-    );
   };
 
   const getStatusInfo = (status: string) => {
@@ -362,7 +326,7 @@ const FuncionarioDashboard = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-orange-500 via-red-600 to-pink-700 flex items-center justify-center">
-        <div className="text-white text-xl">Carregando painel...</div>
+        <div className="text-white text-xl">Carregando...</div>
       </div>
     );
   }
@@ -372,124 +336,107 @@ const FuncionarioDashboard = () => {
       {/* Header */}
       <header className="bg-black/90 backdrop-blur-sm shadow-xl">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div className="flex items-center space-x-4">
-              <div className="bg-red-600 text-white rounded-full w-12 h-12 flex items-center justify-center text-2xl font-bold">
+              <div className="bg-red-600 text-white rounded-full w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center text-lg sm:text-2xl font-bold">
                 T
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-white">PAINEL FUNCIONÁRIO</h1>
-                <p className="text-orange-300">Gestão de Pedidos - Talola Pizza</p>
+                <h1 className="text-xl sm:text-2xl font-bold text-white">TALOLA PIZZA - PAINEL</h1>
+                <p className="text-orange-300 text-sm sm:text-base">Gestão de Pedidos</p>
               </div>
             </div>
-            <div className="flex items-center space-x-4">
-              {/* Status da Loja com controle melhorado */}
-              <div className="flex items-center space-x-3">
-                <div className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold transition-all duration-300 ${
+            <div className="flex items-center space-x-2 sm:space-x-4 w-full sm:w-auto">
+              {/* Status da Loja */}
+              <div className="flex items-center space-x-2 sm:space-x-3 flex-1 sm:flex-none">
+                <div className={`flex items-center gap-2 px-3 py-2 rounded-lg font-bold text-sm ${
                   isOpen 
-                    ? 'bg-green-600/20 text-green-300 border border-green-500/50 shadow-lg shadow-green-500/25' 
-                    : 'bg-red-600/20 text-red-300 border border-red-500/50 shadow-lg shadow-red-500/25'
+                    ? 'bg-green-600/20 text-green-300 border border-green-500/50' 
+                    : 'bg-red-600/20 text-red-300 border border-red-500/50'
                 }`}>
-                  <div className={`w-3 h-3 rounded-full ${
+                  <div className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full ${
                     isOpen ? 'bg-green-400 animate-pulse' : 'bg-red-400'
                   }`}></div>
-                  {isOpen ? '🟢 LOJA ABERTA' : '🔴 LOJA FECHADA'}
+                  <span className="hidden sm:inline">{isOpen ? '🟢 ABERTA' : '🔴 FECHADA'}</span>
+                  <span className="sm:hidden">{isOpen ? '🟢' : '🔴'}</span>
                 </div>
                 <Button
-                  onClick={handleToggleStore}
-                  className={`${
+                  onClick={() => toggleStoreStatus('Staff')}
+                  size="sm"
+                  className={`text-xs sm:text-sm font-bold ${
                     isOpen 
-                      ? 'bg-red-600 hover:bg-red-700 shadow-lg shadow-red-500/25' 
-                      : 'bg-green-600 hover:bg-green-700 shadow-lg shadow-green-500/25'
-                  } text-white font-bold transition-all duration-300 transform hover:scale-105`}
+                      ? 'bg-red-600 hover:bg-red-700' 
+                      : 'bg-green-600 hover:bg-green-700'
+                  } text-white`}
                 >
-                  {isOpen ? 'Fechar Loja' : 'Abrir Loja'}
+                  <span className="hidden sm:inline">{isOpen ? 'Fechar' : 'Abrir'}</span>
+                  <span className="sm:hidden">{isOpen ? 'Fechar' : 'Abrir'}</span>
                 </Button>
               </div>
               <Button
                 onClick={handleLogout}
                 variant="ghost"
-                className="text-white hover:text-orange-300 hover:bg-white/10"
+                size="sm"
+                className="text-white hover:text-orange-300 p-2"
               >
-                <LogOut className="h-5 w-5 mr-2" />
-                Sair
+                <LogOut className="h-4 w-4 sm:h-5 sm:w-5 sm:mr-2" />
+                <span className="hidden sm:inline">Sair</span>
               </Button>
             </div>
           </div>
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-8">
-        <div className="space-y-8">
-          {/* Estatísticas Melhoradas */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <Card className="bg-black/60 backdrop-blur-sm border-white/20 hover:border-yellow-400/50 transition-all duration-300">
-              <CardContent className="p-6">
+      <div className="container mx-auto px-4 py-6 sm:py-8">
+        <div className="space-y-6 sm:space-y-8">
+          {/* Configuração de Horários */}
+          <StoreHoursConfig />
+
+          {/* Estatísticas */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+            <Card className="bg-black/60 backdrop-blur-sm border-white/20">
+              <CardContent className="p-4 sm:p-6">
                 <div className="flex items-center">
-                  <div className="p-3 bg-yellow-500/20 rounded-xl">
-                    <Package className="h-8 w-8 text-yellow-400" />
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm text-orange-200">Pedidos Pendentes</p>
-                    <p className="text-3xl font-bold text-white">{stats.pending}</p>
-                    {stats.pending > 0 && (
-                      <div className="flex items-center text-yellow-400 text-xs mt-1">
-                        <Bell className="h-3 w-3 mr-1 animate-pulse" />
-                        Requer atenção
-                      </div>
-                    )}
+                  <Package className="h-6 w-6 sm:h-8 sm:w-8 text-yellow-400" />
+                  <div className="ml-3 sm:ml-4">
+                    <p className="text-xs sm:text-sm text-orange-200">Pendentes</p>
+                    <p className="text-xl sm:text-2xl font-bold text-white">{stats.pending}</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-black/60 backdrop-blur-sm border-white/20 hover:border-orange-400/50 transition-all duration-300">
-              <CardContent className="p-6">
+            <Card className="bg-black/60 backdrop-blur-sm border-white/20">
+              <CardContent className="p-4 sm:p-6">
                 <div className="flex items-center">
-                  <div className="p-3 bg-orange-500/20 rounded-xl">
-                    <ChefHat className="h-8 w-8 text-orange-400" />
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm text-orange-200">Em Preparo</p>
-                    <p className="text-3xl font-bold text-white">{stats.preparing}</p>
-                    <div className="text-orange-300 text-xs mt-1">
-                      Na cozinha
-                    </div>
+                  <ChefHat className="h-6 w-6 sm:h-8 sm:w-8 text-orange-400" />
+                  <div className="ml-3 sm:ml-4">
+                    <p className="text-xs sm:text-sm text-orange-200">Preparo</p>
+                    <p className="text-xl sm:text-2xl font-bold text-white">{stats.preparing}</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-black/60 backdrop-blur-sm border-white/20 hover:border-purple-400/50 transition-all duration-300">
-              <CardContent className="p-6">
+            <Card className="bg-black/60 backdrop-blur-sm border-white/20">
+              <CardContent className="p-4 sm:p-6">
                 <div className="flex items-center">
-                  <div className="p-3 bg-purple-500/20 rounded-xl">
-                    <Truck className="h-8 w-8 text-purple-400" />
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm text-orange-200">Para Entrega</p>
-                    <p className="text-3xl font-bold text-white">{stats.ready + stats.delivering}</p>
-                    <div className="text-purple-300 text-xs mt-1">
-                      Prontos + Saindo
-                    </div>
+                  <Truck className="h-6 w-6 sm:h-8 sm:w-8 text-purple-400" />
+                  <div className="ml-3 sm:ml-4">
+                    <p className="text-xs sm:text-sm text-orange-200">Entrega</p>
+                    <p className="text-xl sm:text-2xl font-bold text-white">{stats.ready + stats.delivering}</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-black/60 backdrop-blur-sm border-white/20 hover:border-green-400/50 transition-all duration-300">
-              <CardContent className="p-6">
+            <Card className="bg-black/60 backdrop-blur-sm border-white/20">
+              <CardContent className="p-4 sm:p-6">
                 <div className="flex items-center">
-                  <div className="p-3 bg-green-500/20 rounded-xl">
-                    <DollarSign className="h-8 w-8 text-green-400" />
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm text-orange-200">Receita Hoje</p>
-                    <p className="text-2xl font-bold text-white">{formatPrice(stats.todayrevenue)}</p>
-                    <div className="flex items-center text-green-300 text-xs mt-1">
-                      <TrendingUp className="h-3 w-3 mr-1" />
-                      {stats.completed} pedidos
-                    </div>
+                  <DollarSign className="h-6 w-6 sm:h-8 sm:w-8 text-green-400" />
+                  <div className="ml-3 sm:ml-4">
+                    <p className="text-xs sm:text-sm text-orange-200">Hoje</p>
+                    <p className="text-lg sm:text-2xl font-bold text-white">{formatPrice(stats.todayrevenue)}</p>
                   </div>
                 </div>
               </CardContent>
@@ -498,14 +445,14 @@ const FuncionarioDashboard = () => {
 
           {/* Filtros */}
           <Card className="bg-black/60 backdrop-blur-sm border-white/20">
-            <CardHeader>
-              <CardTitle className="text-white flex items-center">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-white flex items-center text-lg">
                 <Filter className="h-5 w-5 mr-2" />
                 Filtros
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="text-orange-200 text-sm mb-2 block">Período</label>
                   <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
@@ -550,81 +497,88 @@ const FuncionarioDashboard = () => {
             <CardContent>
               <div className="space-y-4">
                 {orders.length === 0 ? (
-                  <div className="text-center text-orange-200 py-12">
-                    <Package className="h-16 w-16 text-orange-400 mx-auto mb-4 opacity-50" />
-                    <p className="text-xl font-semibold mb-2">Nenhum pedido encontrado</p>
-                    <p className="text-sm">Os novos pedidos aparecerão aqui automaticamente</p>
-                  </div>
+                  <p className="text-center text-orange-200 py-8">Nenhum pedido encontrado</p>
                 ) : (
                   orders.map((order) => {
                     const statusInfo = getStatusInfo(order.status);
                     const StatusIcon = statusInfo.icon;
                     
                     return (
-                      <div key={order.id} className="bg-white/5 rounded-lg p-4 border border-white/10 hover:border-white/20 transition-all duration-300">
-                        <div className="flex flex-col lg:flex-row lg:items-center justify-between space-y-4 lg:space-y-0">
-                          <div className="flex-1">
-                            <div className="flex items-center space-x-3 mb-2">
-                              <Badge className={`${statusInfo.color} text-white shadow-lg`}>
-                                <StatusIcon className="h-4 w-4 mr-1" />
-                                {statusInfo.text}
-                              </Badge>
-                              <span className="text-white font-mono bg-white/10 px-2 py-1 rounded">
-                                #{order.id.slice(-8)}
-                              </span>
-                              <span className="text-orange-200">{formatTime(order.created_at)}</span>
-                            </div>
-                            
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                              <div>
-                                <p className="text-orange-200 font-semibold">Cliente:</p>
-                                <p className="text-white font-medium">{order.customer_name}</p>
-                                <p className="text-gray-300">{order.customer_phone}</p>
-                              </div>
-                              <div>
-                                <p className="text-orange-200 font-semibold">Endereço:</p>
-                                <p className="text-white">{order.customer_address}</p>
-                              </div>
-                            </div>
-                          </div>
-                          
-                          <div className="flex-shrink-0">
-                            <div className="text-right mb-4">
-                              <p className="text-3xl font-bold text-green-400">{formatPrice(order.total)}</p>
-                              <div className="flex items-center gap-2 justify-end">
-                                <Badge className="bg-blue-600 text-white">
-                                  💳 PIX
+                      <div key={order.id} className="bg-white/5 rounded-lg p-4 border border-white/10">
+                        <div className="flex flex-col space-y-4">
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between space-y-2 sm:space-y-0">
+                            <div className="flex-1">
+                              <div className="flex flex-wrap items-center gap-2 mb-2">
+                                <Badge className={`${statusInfo.color} text-white`}>
+                                  <StatusIcon className="h-4 w-4 mr-1" />
+                                  {statusInfo.text}
                                 </Badge>
-                                <Badge className={
-                                  order.payment_status === 'paid' 
-                                    ? 'bg-green-600 text-white' 
-                                    : 'bg-orange-600 text-white'
-                                }>
-                                  {order.payment_status === 'paid' ? '✅ Pago' : '⏳ Aguardando'}
-                                </Badge>
+                                <span className="text-white font-mono text-sm">#{order.id.slice(-8)}</span>
+                                <span className="text-orange-200 text-sm">{formatTime(order.created_at)}</span>
                               </div>
-                            </div>
-                            
-                            <div className="flex flex-col space-y-2">
-                              {order.payment_status !== 'paid' && (
-                                <Button
-                                  onClick={() => confirmPayment(order.id)}
-                                  size="sm"
-                                  className="bg-green-600 hover:bg-green-700 shadow-lg"
-                                >
-                                  Confirmar PIX
-                                </Button>
-                              )}
                               
-                              {statusInfo.nextStatus && (
-                                <Button
-                                  onClick={() => updateOrderStatus(order.id, statusInfo.nextStatus!)}
-                                  size="sm"
-                                  className="bg-blue-600 hover:bg-blue-700 shadow-lg"
-                                >
-                                  {statusInfo.nextText}
-                                </Button>
-                              )}
+                              <div className="grid grid-cols-1 gap-2 text-sm">
+                                <div>
+                                  <p className="text-orange-200">Cliente:</p>
+                                  <p className="text-white font-medium">{order.customer_name}</p>
+                                  <p className="text-gray-300">{order.customer_phone}</p>
+                                </div>
+                                <div>
+                                  <p className="text-orange-200">Endereço:</p>
+                                  <p className="text-white text-sm">{order.customer_address}</p>
+                                </div>
+                              </div>
+                            </div>
+                            
+                            <div className="flex-shrink-0">
+                              <div className="text-right mb-4">
+                                <p className="text-xl sm:text-2xl font-bold text-green-400">{formatPrice(order.total)}</p>
+                                <div className="flex flex-wrap items-center gap-2 justify-end">
+                                  <Badge className={
+                                    order.payment_method === 'PIX' 
+                                      ? 'bg-blue-600 text-white text-xs' 
+                                      : 'bg-yellow-600 text-white text-xs'
+                                  }>
+                                    {order.payment_method === 'PIX' ? '💳 PIX' : '💵 Dinheiro'}
+                                  </Badge>
+                                  <Badge className={
+                                    order.payment_status === 'paid' 
+                                      ? 'bg-green-600 text-white text-xs' 
+                                      : order.payment_method === 'PIX'
+                                      ? 'bg-orange-600 text-white text-xs'
+                                      : 'bg-gray-600 text-white text-xs'
+                                  }>
+                                    {order.payment_status === 'paid' 
+                                      ? '✅ Pago' 
+                                      : order.payment_method === 'PIX'
+                                      ? '⏳ Aguardando PIX'
+                                      : '💵 Pagar na Entrega'
+                                    }
+                                  </Badge>
+                                </div>
+                              </div>
+                              
+                              <div className="flex flex-col sm:flex-row gap-2">
+                                {order.payment_status !== 'paid' && order.payment_method === 'PIX' && (
+                                  <Button
+                                    onClick={() => confirmPayment(order.id)}
+                                    size="sm"
+                                    className="bg-green-600 hover:bg-green-700 text-xs"
+                                  >
+                                    Confirmar PIX
+                                  </Button>
+                                )}
+                                
+                                {statusInfo.nextStatus && (
+                                  <Button
+                                    onClick={() => updateOrderStatus(order.id, statusInfo.nextStatus!)}
+                                    size="sm"
+                                    className="bg-blue-600 hover:bg-blue-700 text-xs"
+                                  >
+                                    {statusInfo.nextText}
+                                  </Button>
+                                )}
+                              </div>
                             </div>
                           </div>
                         </div>

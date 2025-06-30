@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Lock, ArrowLeft } from 'lucide-react';
+import { Lock, ArrowLeft, Pizza } from 'lucide-react';
 import { toast } from 'sonner';
 
 const FuncionarioLogin = () => {
@@ -18,13 +18,17 @@ const FuncionarioLogin = () => {
     setLoading(true);
 
     try {
-      // Senha única para funcionários acessarem
-      if (password === 'talola2024') {
+      // Nova senha para funcionários
+      if (password === 'Talola3421') {
         localStorage.setItem('funcionario_authenticated', 'true');
-        toast.success('Acesso liberado!');
+        toast.success('Acesso liberado!', {
+          description: 'Bem-vindo ao painel de funcionário'
+        });
         navigate('/funcionario-dashboard');
       } else {
-        toast.error('Senha incorreta!');
+        toast.error('Senha incorreta!', {
+          description: 'Verifique a senha e tente novamente'
+        });
       }
     } catch (error) {
       toast.error('Erro ao fazer login');
@@ -35,27 +39,33 @@ const FuncionarioLogin = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-500 via-red-600 to-pink-700 flex items-center justify-center p-4">
-      <Card className="max-w-md mx-auto bg-black/60 backdrop-blur-sm border-white/20">
-        <CardHeader className="text-center">
-          <div className="bg-red-600 text-white rounded-full w-16 h-16 flex items-center justify-center text-3xl font-bold mx-auto mb-4">
-            T
+      <Card className="w-full max-w-md mx-auto bg-black/80 backdrop-blur-xl border-white/20 shadow-2xl">
+        <CardHeader className="text-center pb-6">
+          <div className="flex items-center justify-center gap-3 mb-6">
+            <div className="bg-red-600 text-white rounded-full w-16 h-16 flex items-center justify-center text-3xl font-bold shadow-lg">
+              T
+            </div>
+            <Pizza className="h-8 w-8 text-orange-400" />
           </div>
-          <CardTitle className="text-3xl text-white">
-            ÁREA FUNCIONÁRIOS
+          <CardTitle className="text-2xl sm:text-3xl text-white font-bold">
+            TALOLA PIZZA
           </CardTitle>
-          <p className="text-orange-200">Acesso restrito</p>
+          <p className="text-lg text-orange-300 font-semibold">Painel de Funcionário</p>
+          <p className="text-sm text-orange-200/80">Acesso restrito</p>
         </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <Label htmlFor="password" className="text-white">Senha de Acesso</Label>
+        <CardContent className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="password" className="text-white font-medium">
+                Senha de Acesso
+              </Label>
               <div className="relative">
-                <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
                 <Input
                   id="password"
                   type="password"
                   placeholder="Digite a senha"
-                  className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-gray-400"
+                  className="pl-11 h-12 bg-white/10 border-white/20 text-white placeholder:text-gray-400 focus:border-orange-400 focus:ring-orange-400/20"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
@@ -65,26 +75,38 @@ const FuncionarioLogin = () => {
 
             <Button 
               type="submit" 
-              className="w-full bg-red-600 hover:bg-red-700 text-white text-lg py-3"
+              className="w-full h-12 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white text-lg font-bold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
               disabled={loading}
             >
-              {loading ? 'Verificando...' : 'Acessar'}
+              {loading ? (
+                <div className="flex items-center justify-center gap-2">
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Verificando...
+                </div>
+              ) : (
+                <div className="flex items-center justify-center gap-2">
+                  <Lock className="h-5 w-5" />
+                  Acessar Painel
+                </div>
+              )}
             </Button>
           </form>
 
-          <div className="mt-6 text-center">
+          <div className="text-center">
             <Button
               variant="ghost"
               onClick={() => navigate('/')}
-              className="text-orange-300 hover:text-white"
+              className="text-orange-300 hover:text-white hover:bg-white/10 transition-all duration-300"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
               Voltar ao Site
             </Button>
           </div>
 
-          <div className="mt-6 text-center text-sm text-orange-200 bg-white/10 rounded-lg p-3">
-            <p><strong>Senha:</strong> talola2024</p>
+          {/* Informação da senha para desenvolvimento */}
+          <div className="text-center text-xs text-orange-200/60 bg-white/5 rounded-lg p-3 border border-white/10">
+            <p className="mb-1"><strong>Desenvolvimento:</strong></p>
+            <p className="font-mono">Talola3421</p>
           </div>
         </CardContent>
       </Card>

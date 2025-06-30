@@ -9,7 +9,7 @@ const Logo: React.FC = () => {
         T
       </div>
       <Pizza className="h-6 w-6 text-orange-500" />
-      <span className="text-xl font-bold text-gray-800">Talola Pizza</span>
+      <span className="text-xl font-bold text-gray-800">TALOLA PIZZA</span>
     </div>
   );
 };

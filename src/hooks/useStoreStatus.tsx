@@ -71,6 +71,20 @@ export const useStoreStatus = () => {
     }
   };
 
+  const checkAutoClose = () => {
+    if (!storeStatus || !storeStatus.closing_time || storeStatus.id === 'default') return;
+
+    const now = new Date();
+    const currentTime = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+    const closingTime = storeStatus.closing_time;
+
+    // Se passou do horário de fechamento e a loja ainda está aberta
+    if (currentTime >= closingTime && storeStatus.is_open) {
+      // Fechar automaticamente
+      toggleStoreStatus('Sistema - Fechamento Automático');
+    }
+  };
+
   const toggleStoreStatus = async (updatedBy: string = 'Staff') => {
     if (!storeStatus || storeStatus.id === 'default') return;
 
@@ -146,10 +160,14 @@ export const useStoreStatus = () => {
       )
       .subscribe();
 
+    // Verificar fechamento automático a cada minuto
+    const autoCloseInterval = setInterval(checkAutoClose, 60000);
+
     return () => {
       supabase.removeChannel(channel);
+      clearInterval(autoCloseInterval);
     };
-  }, []);
+  }, [storeStatus?.closing_time, storeStatus?.is_open]);
 
   const checkStoreInteraction = () => {
     if (!storeStatus?.is_open) {
