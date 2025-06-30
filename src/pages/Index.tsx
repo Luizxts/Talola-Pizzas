@@ -1,319 +1,285 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Clock, Star, MapPin, Phone, ChefHat, Truck, ShoppingCart, Sparkles, Settings } from 'lucide-react';
-import { toast } from 'sonner';
+import { ShoppingCart, Clock, Star, Phone, MapPin, Truck, Zap, Pizza, ChefHat } from 'lucide-react';
 import { useStoreStatus } from '@/hooks/useStoreStatus';
 import StoreStatusBanner from '@/components/StoreStatusBanner';
 
 const Index = () => {
   const navigate = useNavigate();
-  const { isOpen } = useStoreStatus();
-  const [currentTime, setCurrentTime] = useState(new Date());
+  const { isOpen, getFormattedHours } = useStoreStatus();
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  // Carousel de imagens de pizzas
+  const pizzaImages = [
+    '/placeholder.svg?height=600&width=800&text=Pizza+Margherita',
+    '/placeholder.svg?height=600&width=800&text=Pizza+Calabresa',
+    '/placeholder.svg?height=600&width=800&text=Pizza+Portuguesa'
+  ];
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 1000);
-
-    return () => clearInterval(timer);
+    const interval = setInterval(() => {
+      setCurrentImageIndex((prev) => (prev + 1) % pizzaImages.length);
+    }, 5000);
+    return () => clearInterval(interval);
   }, []);
 
-  const formatTime = (date: Date) => {
-    return date.toLocaleTimeString('pt-BR', {
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit'
-    });
-  };
-
-  const handleOrderClick = () => {
-    if (!isOpen) {
-      toast.error('Loja fechada no momento. Volte durante o horário de funcionamento!');
-      return;
-    }
-    navigate('/menu');
-  };
-
-  const features = [
-    {
-      icon: ChefHat,
-      title: 'Receitas Tradicionais',
-      description: 'Pizzas preparadas com ingredientes frescos e receitas especiais',
-      color: 'from-orange-500 to-red-500'
-    },
-    {
-      icon: Truck,
-      title: 'Entrega Rápida',
-      description: 'Delivery em até 30 minutos na sua região',
-      color: 'from-blue-500 to-purple-500'
-    },
-    {
-      icon: Star,
-      title: 'Qualidade Premium',
-      description: 'Ingredientes selecionados e massa artesanal',
-      color: 'from-green-500 to-emerald-500'
-    }
-  ];
-
-  const specialOffers = [
-    {
-      title: 'Pizza Margherita Especial',
-      description: 'Molho especial, mussarela de búfala, tomate cherry e manjericão fresco',
-      price: 'R$ 45,90',
-      originalPrice: 'R$ 52,90',
-      image: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=500&h=300&fit=crop'
-    },
-    {
-      title: 'Combo Família',
-      description: '2 pizzas grandes + refrigerante 2L + sobremesa',
-      price: 'R$ 89,90',
-      originalPrice: 'R$ 110,90',
-      image: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=500&h=300&fit=crop'
-    }
-  ];
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+    <div className="min-h-screen bg-gradient-to-br from-orange-500 via-red-600 to-pink-700">
       <StoreStatusBanner />
-
-      {/* Enhanced Hero Section */}
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-orange-500/20 via-red-500/20 to-pink-500/20 blur-3xl"></div>
-        <div className="relative container mx-auto px-4 py-12 sm:py-20 text-center">
-          <div className="max-w-4xl mx-auto">
-            {/* Logo and Brand */}
-            <div className="flex justify-center mb-6 sm:mb-8">
-              <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-orange-500 to-red-500 rounded-full blur-2xl opacity-50 animate-pulse"></div>
-                <div className="relative bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-full w-20 h-20 sm:w-24 sm:h-24 flex items-center justify-center text-3xl sm:text-4xl font-bold shadow-2xl">
-                  T
+      
+      {/* Header */}
+      <header className="bg-black/90 backdrop-blur-sm shadow-xl sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center space-x-4">
+              <div className="bg-red-600 text-white rounded-full w-12 h-12 flex items-center justify-center text-2xl font-bold">
+                T
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-white">TRATTORIA FAMIGLIA</h1>
+                <div className="flex items-center gap-1 text-sm">
+                  <Clock className="h-4 w-4" />
+                  <span className={isOpen ? 'text-green-400' : 'text-red-400'}>
+                    {isOpen ? `Aberto até ${getFormattedHours().split(' - ')[1]}` : 'Fechado'}
+                  </span>
                 </div>
               </div>
             </div>
-
-            <h1 className="text-4xl sm:text-6xl md:text-8xl font-bold mb-4 sm:mb-6 bg-gradient-to-r from-orange-400 via-red-400 to-pink-400 bg-clip-text text-transparent leading-tight">
-              TALOLA PIZZA
-            </h1>
-            
-            <p className="text-lg sm:text-2xl md:text-3xl text-slate-300 mb-4 font-light px-4">
-              Sabores Autênticos, Momentos Especiais
-            </p>
-            
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8 sm:mb-12 px-4">
-              <div className="flex items-center gap-2 bg-black/30 backdrop-blur-sm px-4 py-2 rounded-full border border-white/20">
-                <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-orange-400" />
-                <span className="text-white font-medium text-sm sm:text-base">{formatTime(currentTime)}</span>
-              </div>
-              <Badge className={`px-4 sm:px-6 py-2 sm:py-3 text-base sm:text-lg font-bold ${isOpen ? 'bg-gradient-to-r from-green-500 to-emerald-500' : 'bg-gradient-to-r from-red-500 to-red-600'} text-white shadow-lg`}>
-                {isOpen ? '🟢 Aberto' : '🔴 Fechado'}
-              </Badge>
-            </div>
-
-            <div className="flex flex-col items-center gap-4 sm:gap-6 justify-center px-4">
+            <div className="flex items-center space-x-4">
               <Button
-                onClick={handleOrderClick}
-                disabled={!isOpen}
-                className={`px-12 sm:px-16 py-6 sm:py-8 text-xl sm:text-2xl font-bold rounded-2xl transition-all duration-300 ${
-                  isOpen 
-                    ? 'bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white shadow-2xl hover:shadow-orange-500/25 hover:scale-105' 
-                    : 'bg-slate-700 cursor-not-allowed text-slate-400'
-                }`}
-                size="lg"
+                onClick={() => navigate('/menu')}
+                className="bg-red-600 hover:bg-red-700 text-white font-semibold px-6 py-2 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
               >
-                {isOpen ? (
-                  <div className="flex items-center gap-3 sm:gap-4">
-                    <ShoppingCart className="h-6 w-6 sm:h-8 sm:w-8" />
-                    <span className="text-lg sm:text-xl">FAZER PEDIDO AGORA</span>
-                  </div>
-                ) : (
-                  'LOJA FECHADA'
-                )}
-              </Button>
-
-              {/* Acesso para Funcionários */}
-              <Button
-                onClick={() => navigate('/funcionario-login')}
-                variant="ghost"
-                className="text-orange-300/70 hover:text-orange-300 text-sm hover:bg-orange-500/10 transition-all duration-300"
-              >
-                <Settings className="h-4 w-4 mr-2" />
-                Acesso Funcionários
+                <ShoppingCart className="h-5 w-5 mr-2" />
+                Ver Cardápio
               </Button>
             </div>
           </div>
         </div>
-      </section>
+      </header>
 
-      {/* Special Offers Section */}
-      <section className="py-12 sm:py-20 container mx-auto px-4">
-        <div className="text-center mb-12 sm:mb-16">
-          <h2 className="text-3xl sm:text-5xl font-bold mb-4 sm:mb-6 bg-gradient-to-r from-orange-400 to-red-400 bg-clip-text text-transparent">
-            Ofertas Especiais
-          </h2>
-          <p className="text-lg sm:text-xl text-slate-300 max-w-2xl mx-auto leading-relaxed px-4">
-            Promoções imperdíveis para você saborear o melhor da nossa cozinha
-          </p>
-        </div>
-
-        <div className="grid md:grid-cols-2 gap-6 sm:gap-8 max-w-6xl mx-auto">
-          {specialOffers.map((offer, index) => (
-            <Card key={index} className="group overflow-hidden bg-gradient-to-br from-slate-900/95 to-slate-800/95 backdrop-blur-xl border-slate-700/50 hover:border-orange-500/50 hover:shadow-2xl hover:shadow-orange-500/10 transition-all duration-500">
-              <div className="relative aspect-[16/9] overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent z-10" />
-                <img 
-                  src={offer.image} 
-                  alt={offer.title}
-                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                />
-                <div className="absolute top-4 right-4 z-20">
-                  <Badge className="bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs sm:text-sm font-bold px-2 sm:px-3 py-1 backdrop-blur-sm animate-pulse">
-                    <Sparkles className="h-3 w-3 mr-1" />
-                    OFERTA ESPECIAL
-                  </Badge>
+      {/* Hero Section */}
+      <section className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-black/40"></div>
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div className="text-center lg:text-left">
+              <h2 className="text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
+                As Melhores
+                <span className="block text-yellow-400">Pizzas da Cidade</span>
+              </h2>
+              <p className="text-xl text-white/90 mb-8 leading-relaxed">
+                Sabores autênticos, ingredientes frescos e a tradição italiana em cada fatia. 
+                Experimente nossas receitas especiais preparadas com amor.
+              </p>
+              
+              {/* Delivery Info */}
+              <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 mb-8 border border-white/20">
+                <div className="flex items-center justify-center gap-3 mb-4">
+                  <Truck className="h-6 w-6 text-orange-400" />
+                  <h3 className="text-2xl font-bold text-white">Taxa de entrega a partir de R$ 5</h3>
                 </div>
+                <p className="text-white/80 text-lg">
+                  Para toda a região central. Entrega em até 30 minutos!
+                </p>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Button
+                  onClick={() => navigate('/menu')}
+                  size="lg"
+                  className="bg-red-600 hover:bg-red-700 text-white font-bold py-4 px-8 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 text-lg"
+                >
+                  <Pizza className="h-6 w-6 mr-2" />
+                  Peça Agora
+                </Button>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  onClick={() => window.open('https://wa.me/5521975406476', '_blank')}
+                  className="border-white/30 text-white hover:bg-white/10 font-bold py-4 px-8 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 text-lg"
+                >
+                  <Phone className="h-6 w-6 mr-2" />
+                  WhatsApp
+                </Button>
+              </div>
+            </div>
+
+            {/* Pizza Carousel */}
+            <div className="relative">
+              <div className="relative h-96 lg:h-[500px] rounded-2xl overflow-hidden shadow-2xl">
+                <img
+                  src={pizzaImages[currentImageIndex]}
+                  alt="Pizza deliciosa"
+                  className="w-full h-full object-cover transition-all duration-1000"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
               </div>
               
-              <CardHeader className="pb-4">
-                <CardTitle className="text-xl sm:text-2xl text-white font-bold group-hover:text-orange-300 transition-colors">
-                  {offer.title}
-                </CardTitle>
-                <CardDescription className="text-slate-300 text-sm sm:text-base leading-relaxed">
-                  {offer.description}
-                </CardDescription>
-              </CardHeader>
-              
-              <CardContent className="pt-0">
-                <div className="flex items-center justify-between mb-4 sm:mb-6">
-                  <div className="flex items-center gap-2 sm:gap-3">
-                    <span className="text-2xl sm:text-3xl font-bold text-green-400">{offer.price}</span>
-                    <span className="text-base sm:text-lg text-slate-400 line-through">{offer.originalPrice}</span>
-                  </div>
-                </div>
-                
-                <Button
-                  onClick={handleOrderClick}
-                  disabled={!isOpen}
-                  className={`w-full py-3 text-base sm:text-lg font-bold rounded-xl transition-all duration-300 ${
-                    isOpen 
-                      ? 'bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white shadow-lg hover:shadow-xl hover:shadow-orange-500/25 hover:scale-[1.02]' 
-                      : 'bg-slate-700 cursor-not-allowed text-slate-400'
-                  }`}
-                >
-                  {isOpen ? 'PEDIR AGORA' : 'LOJA FECHADA'}
-                </Button>
-              </CardContent>
-            </Card>
-          ))}
+              {/* Indicators */}
+              <div className="flex justify-center mt-4 space-x-2">
+                {pizzaImages.map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setCurrentImageIndex(index)}
+                    className={`w-3 h-3 rounded-full transition-all duration-300 ${
+                      index === currentImageIndex ? 'bg-white' : 'bg-white/50'
+                    }`}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
       {/* Features Section */}
-      <section className="py-12 sm:py-20 bg-gradient-to-r from-slate-900/50 to-slate-800/50 backdrop-blur-xl">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12 sm:mb-16">
-            <h2 className="text-3xl sm:text-5xl font-bold mb-4 sm:mb-6 bg-gradient-to-r from-orange-400 to-red-400 bg-clip-text text-transparent">
-              Por Que Escolher Talola?
-            </h2>
-            <p className="text-lg sm:text-xl text-slate-300 max-w-2xl mx-auto leading-relaxed px-4">
-              Qualidade, sabor e tradição em cada fatia
-            </p>
+      <section className="py-16 bg-black/20 backdrop-blur-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h3 className="text-4xl font-bold text-white mb-4">Por que nos escolher?</h3>
+            <p className="text-xl text-white/80">Qualidade, sabor e tradição em cada pedido</p>
           </div>
+          
+          <div className="grid md:grid-cols-3 gap-8">
+            <Card className="bg-white/10 backdrop-blur-sm border-white/20 hover:bg-white/20 transition-all duration-300">
+              <CardContent className="p-8 text-center">
+                <div className="bg-red-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <ChefHat className="h-8 w-8 text-white" />
+                </div>
+                <h4 className="text-xl font-bold text-white mb-2">Receitas Tradicionais</h4>
+                <p className="text-white/80">Seguimos receitas familiares passadas de geração em geração</p>
+              </CardContent>
+            </Card>
 
-          <div className="grid md:grid-cols-3 gap-6 sm:gap-8 max-w-6xl mx-auto">
-            {features.map((feature, index) => {
-              const IconComponent = feature.icon;
-              return (
-                <Card key={index} className="group text-center bg-gradient-to-br from-slate-900/95 to-slate-800/95 backdrop-blur-xl border-slate-700/50 hover:border-orange-500/50 hover:shadow-2xl hover:shadow-orange-500/10 transition-all duration-500">
-                  <CardHeader className="pb-6">
-                    <div className={`mx-auto w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-r ${feature.color} flex items-center justify-center mb-4 sm:mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg`}>
-                      <IconComponent className="h-8 w-8 sm:h-10 sm:w-10 text-white" />
-                    </div>
-                    <CardTitle className="text-xl sm:text-2xl text-white font-bold group-hover:text-orange-300 transition-colors">
-                      {feature.title}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <CardDescription className="text-slate-300 text-base sm:text-lg leading-relaxed">
-                      {feature.description}
-                    </CardDescription>
-                  </CardContent>
-                </Card>
-              );
-            })}
+            <Card className="bg-white/10 backdrop-blur-sm border-white/20 hover:bg-white/20 transition-all duration-300">
+              <CardContent className="p-8 text-center">
+                <div className="bg-green-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Zap className="h-8 w-8 text-white" />
+                </div>
+                <h4 className="text-xl font-bold text-white mb-2">Entrega Rápida</h4>
+                <p className="text-white/80">Suas pizzas chegam quentinhas em até 30 minutos</p>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-white/10 backdrop-blur-sm border-white/20 hover:bg-white/20 transition-all duration-300">
+              <CardContent className="p-8 text-center">
+                <div className="bg-yellow-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Star className="h-8 w-8 text-white" />
+                </div>
+                <h4 className="text-xl font-bold text-white mb-2">Qualidade Premium</h4>
+                <p className="text-white/80">Ingredientes frescos e selecionados todos os dias</p>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* Stats Section */}
+      <section className="py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid md:grid-cols-4 gap-8 text-center">
+            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20">
+              <div className="text-4xl font-bold text-yellow-400 mb-2">500+</div>
+              <div className="text-white/80">Pizzas Vendidas</div>
+            </div>
+            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20">
+              <div className="text-4xl font-bold text-green-400 mb-2">4.8</div>
+              <div className="text-white/80 flex items-center justify-center gap-1">
+                <Star className="h-4 w-4 fill-current" />
+                Avaliação
+              </div>
+            </div>
+            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20">
+              <div className="text-4xl font-bold text-blue-400 mb-2">30min</div>
+              <div className="text-white/80">Tempo Médio</div>
+            </div>
+            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20">
+              <div className="text-4xl font-bold text-red-400 mb-2">100%</div>
+              <div className="text-white/80">Satisfação</div>
+            </div>
           </div>
         </div>
       </section>
 
       {/* Contact Section */}
-      <section className="py-12 sm:py-20 container mx-auto px-4">
-        <div className="max-w-4xl mx-auto">
-          <Card className="bg-gradient-to-br from-slate-900/95 to-slate-800/95 backdrop-blur-xl border-slate-700/50 shadow-2xl">
-            <CardHeader className="text-center bg-gradient-to-r from-orange-500/10 to-red-500/10 border-b border-slate-700/50">
-              <CardTitle className="text-2xl sm:text-4xl font-bold bg-gradient-to-r from-orange-400 to-red-400 bg-clip-text text-transparent">
-                Contato & Localização
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-4 sm:p-8">
-              <div className="grid md:grid-cols-2 gap-6 sm:gap-8">
-                <div className="space-y-4 sm:space-y-6">
-                  <div className="flex items-center space-x-4 p-4 bg-slate-800/50 rounded-xl border border-slate-700/50">
-                    <div className="bg-orange-500/20 p-3 rounded-lg">
-                      <MapPin className="h-5 w-5 sm:h-6 sm:w-6 text-orange-400" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-white text-base sm:text-lg">Endereço</h3>
-                      <p className="text-slate-300 text-sm sm:text-base">Rua das Pizzas, 123 - Centro</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center space-x-4 p-4 bg-slate-800/50 rounded-xl border border-slate-700/50">
-                    <div className="bg-green-500/20 p-3 rounded-lg">
-                      <Phone className="h-5 w-5 sm:h-6 sm:w-6 text-green-400" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-white text-base sm:text-lg">Telefone</h3>
-                      <p className="text-slate-300 text-sm sm:text-base">(21) 97540-6476</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center space-x-4 p-4 bg-slate-800/50 rounded-xl border border-slate-700/50">
-                    <div className="bg-blue-500/20 p-3 rounded-lg">
-                      <Clock className="h-5 w-5 sm:h-6 sm:w-6 text-blue-400" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-white text-base sm:text-lg">Horário</h3>
-                      <p className="text-slate-300 text-sm sm:text-base">Seg-Dom: 18:00 - 00:00</p>
-                    </div>
+      <section className="py-16 bg-black/20 backdrop-blur-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h3 className="text-4xl font-bold text-white mb-4">Contato</h3>
+            <p className="text-xl text-white/80">Estamos aqui para te atender</p>
+          </div>
+          
+          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            <Card className="bg-white/10 backdrop-blur-sm border-white/20">
+              <CardContent className="p-8">
+                <div className="flex items-center gap-4 mb-4">
+                  <Phone className="h-8 w-8 text-green-400" />
+                  <div>
+                    <h4 className="text-xl font-bold text-white">WhatsApp</h4>
+                    <p className="text-white/80">(21) 97540-6476</p>
                   </div>
                 </div>
-                
-                <div className="space-y-4 sm:space-y-6">
-                  <div className="bg-gradient-to-r from-orange-500/10 to-red-500/10 p-4 sm:p-6 rounded-xl border border-orange-500/20">
-                    <h3 className="font-bold text-white text-lg sm:text-xl mb-3 sm:mb-4">🍕 Delivery Grátis</h3>
-                    <p className="text-slate-300 text-sm sm:text-base leading-relaxed">
-                      Para pedidos acima de R$ 50,00 na região central. 
-                      Entrega em até 30 minutos!
-                    </p>
-                  </div>
-                  
-                  <div className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 p-4 sm:p-6 rounded-xl border border-green-500/20">
-                    <h3 className="font-bold text-white text-lg sm:text-xl mb-3 sm:mb-4">💳 Formas de Pagamento</h3>
-                    <div className="flex gap-2 flex-wrap">
-                      <Badge className="bg-green-600 text-white text-xs sm:text-sm">PIX</Badge>
-                      <Badge className="bg-blue-600 text-white text-xs sm:text-sm">Cartão</Badge>
-                      <Badge className="bg-yellow-600 text-white text-xs sm:text-sm">Dinheiro</Badge>
-                    </div>
+                <Button
+                  onClick={() => window.open('https://wa.me/5521975406476', '_blank')}
+                  className="w-full bg-green-600 hover:bg-green-700"
+                >
+                  Chamar no WhatsApp
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-white/10 backdrop-blur-sm border-white/20">
+              <CardContent className="p-8">
+                <div className="flex items-center gap-4 mb-4">
+                  <MapPin className="h-8 w-8 text-red-400" />
+                  <div>
+                    <h4 className="text-xl font-bold text-white">Endereço</h4>
+                    <p className="text-white/80">Centro - Rio de Janeiro, RJ</p>
                   </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+                <div className="text-white/80">
+                  <p className="mb-2">
+                    <strong>Horário:</strong> {getFormattedHours()}
+                  </p>
+                  <Badge className={`${isOpen ? 'bg-green-600' : 'bg-red-600'}`}>
+                    {isOpen ? '🟢 Aberto' : '🔴 Fechado'}
+                  </Badge>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </section>
+
+      {/* Footer */}
+      <footer className="bg-black/60 backdrop-blur-sm py-8 border-t border-white/10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <div className="flex justify-center items-center gap-4 mb-4">
+            <div className="bg-red-600 text-white rounded-full w-10 h-10 flex items-center justify-center text-lg font-bold">
+              T
+            </div>
+            <h3 className="text-2xl font-bold text-white">TRATTORIA FAMIGLIA</h3>
+          </div>
+          <p className="text-white/60 mb-4">
+            © 2024 Trattoria Famiglia. A melhor pizza da cidade.
+          </p>
+          <div className="flex justify-center gap-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => window.open('https://wa.me/5521975406476', '_blank')}
+              className="text-white/80 hover:text-white"
+            >
+              WhatsApp
+            </Button>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };

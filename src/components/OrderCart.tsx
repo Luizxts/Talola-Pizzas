@@ -37,13 +37,12 @@ const OrderCart: React.FC<OrderCartProps> = ({
   };
 
   const subtotal = items.reduce((sum, item) => sum + item.totalPrice, 0);
-  const deliveryFee = 8.00; // Taxa de entrega atualizada
-  const total = subtotal + deliveryFee;
-
-  // Calcular desconto por quantidade
+  const deliveryFee = 8.00;
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
-  const volumeDiscount = totalItems >= 3 ? subtotal * 0.05 : 0; // 5% desconto para 3+ itens
-  const finalTotal = total - volumeDiscount;
+  
+  // Desconto por volume: 5% para 3+ pizzas
+  const volumeDiscount = totalItems >= 3 ? subtotal * 0.05 : 0;
+  const finalTotal = subtotal + deliveryFee - volumeDiscount;
 
   if (items.length === 0) {
     return (

@@ -22,46 +22,57 @@ export const useStoreStatus = () => {
       const { data, error } = await supabase
         .from('store_settings')
         .select('*')
-        .single();
+        .maybeSingle();
 
       if (error && error.code !== 'PGRST116') {
         console.error('Erro ao buscar status da loja:', error);
+        // Fallback para loja fechada se houver erro
+        setStoreStatus({
+          id: 'default',
+          is_open: false,
+          opening_time: '18:00',
+          closing_time: '00:00',
+          last_updated: new Date().toISOString(),
+          updated_by: 'Sistema',
+          created_at: new Date().toISOString()
+        });
         return;
       }
 
       if (data) {
         setStoreStatus(data as StoreStatus);
       } else {
-        // Se não existe configuração, criar uma padrão (fechada por segurança)
+        // Se não existe configuração, assumir loja fechada por segurança
         const defaultStatus = {
+          id: 'default',
           is_open: false,
           opening_time: '18:00',
           closing_time: '00:00',
           last_updated: new Date().toISOString(),
-          updated_by: 'Sistema'
+          updated_by: 'Sistema',
+          created_at: new Date().toISOString()
         };
-        
-        const { data: newData, error: insertError } = await supabase
-          .from('store_settings')
-          .insert(defaultStatus)
-          .select()
-          .single();
-
-        if (insertError) {
-          console.error('Erro ao criar configuração padrão:', insertError);
-          return;
-        }
-        setStoreStatus(newData as StoreStatus);
+        setStoreStatus(defaultStatus);
       }
     } catch (error) {
       console.error('Erro ao buscar status da loja:', error);
+      // Fallback para loja fechada em caso de erro
+      setStoreStatus({
+        id: 'default',
+        is_open: false,
+        opening_time: '18:00',
+        closing_time: '00:00',
+        last_updated: new Date().toISOString(),
+        updated_by: 'Sistema',
+        created_at: new Date().toISOString()
+      });
     } finally {
       setLoading(false);
     }
   };
 
   const toggleStoreStatus = async (updatedBy: string = 'Staff') => {
-    if (!storeStatus) return;
+    if (!storeStatus || storeStatus.id === 'default') return;
 
     const newStatus = !storeStatus.is_open;
     
@@ -81,7 +92,6 @@ export const useStoreStatus = () => {
 
       setStoreStatus(data as StoreStatus);
       
-      // Toast melhorado com mais informações
       const statusText = newStatus ? 'aberta' : 'fechada';
       const emoji = newStatus ? '🟢' : '🔴';
       const description = newStatus 
