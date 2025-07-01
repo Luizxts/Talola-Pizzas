@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -52,31 +51,54 @@ const MenuCard: React.FC<MenuItemProps> = ({
     
     const productName = name.toLowerCase();
     
-    // Imagens específicas baseadas no tipo de pizza/produto
-    if (productName.includes('margherita') || productName.includes('margarita')) {
+    // Imagens específicas baseadas no tipo de pizza/produto com mais variações
+    if (productName.includes('margherita') || productName.includes('margarita') || 
+        productName.includes('mussarela') || productName.includes('mozzarella') ||
+        productName.includes('queijo') || productName.includes('tradicional')) {
       return 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=500&h=300&fit=crop';
-    } else if (productName.includes('calabresa') || productName.includes('pepperoni')) {
+    } else if (productName.includes('calabresa') || productName.includes('pepperoni') || 
+               productName.includes('linguiça') || productName.includes('salame')) {
       return 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=500&h=300&fit=crop';
-    } else if (productName.includes('portuguesa') || productName.includes('supreme')) {
+    } else if (productName.includes('portuguesa') || productName.includes('supreme') ||
+               productName.includes('palmito') || productName.includes('azeitona')) {
       return 'https://images.unsplash.com/photo-1571997478779-2adcbbe9ab2f?w=500&h=300&fit=crop';
-    } else if (productName.includes('frango') || productName.includes('chicken')) {
+    } else if (productName.includes('frango') || productName.includes('chicken') ||
+               productName.includes('catupiry') || productName.includes('catupiri')) {
       return 'https://images.unsplash.com/photo-1594007654729-407eedc4be65?w=500&h=300&fit=crop';
-    } else if (productName.includes('quatro queijos') || productName.includes('cheese')) {
+    } else if (productName.includes('quatro queijos') || productName.includes('4 queijos') ||
+               productName.includes('gorgonzola') || productName.includes('cheese')) {
       return 'https://images.unsplash.com/photo-1548369937-47519962c11a?w=500&h=300&fit=crop';
-    } else if (productName.includes('bacon') || productName.includes('meat')) {
+    } else if (productName.includes('bacon') || productName.includes('meat') ||
+               productName.includes('lombo') || productName.includes('presunto')) {
       return 'https://images.unsplash.com/photo-1590534247854-3d44b90ec6d4?w=500&h=300&fit=crop';
-    } else if (productName.includes('vegetariana') || productName.includes('veggie')) {
+    } else if (productName.includes('vegetariana') || productName.includes('veggie') ||
+               productName.includes('verdura') || productName.includes('brócolis') ||
+               productName.includes('tomate') || productName.includes('vegetais')) {
       return 'https://images.unsplash.com/photo-1552539618-7eec9b4d1796?w=500&h=300&fit=crop';
-    } else if (productName.includes('combo') || productName.includes('promoção')) {
-      return 'https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?w=500&h=300&fit=crop';
-    } else if (productName.includes('refrigerante') || productName.includes('coca') || productName.includes('drink')) {
-      return 'https://images.unsplash.com/photo-1581636625402-29b2a704ef13?w=500&h=300&fit=crop';
-    } else if (productName.includes('sobremesa') || productName.includes('doce') || productName.includes('brownie')) {
+    } else if (productName.includes('napolitana') || productName.includes('italiana') ||
+               productName.includes('caprese') || productName.includes('manjericão')) {
+      return 'https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=500&h=300&fit=crop';
+    } else if (productName.includes('chocolate') || productName.includes('nutella') ||
+               productName.includes('doce') || productName.includes('banana')) {
       return 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=500&h=300&fit=crop';
+    } else if (productName.includes('combo') || productName.includes('promoção') ||
+               productName.includes('especial') || productName.includes('oferta')) {
+      return 'https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?w=500&h=300&fit=crop';
+    } else if (productName.includes('refrigerante') || productName.includes('coca') || 
+               productName.includes('drink') || productName.includes('suco') ||
+               productName.includes('bebida') || productName.includes('água')) {
+      return 'https://images.unsplash.com/photo-1581636625402-29b2a704ef13?w=500&h=300&fit=crop';
+    } else if (productName.includes('sobremesa') || productName.includes('brownie') ||
+               productName.includes('pudim') || productName.includes('torta') ||
+               productName.includes('bolo') || productName.includes('doce')) {
+      return 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=500&h=300&fit=crop';
+    } else if (productName.includes('pizza')) {
+      // Para qualquer pizza que não foi identificada acima
+      return 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=500&h=300&fit=crop';
     }
     
-    // Imagem padrão para pizzas
-    return 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=500&h=300&fit=crop';
+    // Imagem padrão genérica para qualquer produto
+    return 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=500&h=300&fit=crop';
   };
 
   const calculatePrice = () => {
