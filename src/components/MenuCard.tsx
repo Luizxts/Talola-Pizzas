@@ -46,6 +46,39 @@ const MenuCard: React.FC<MenuItemProps> = ({
   const sizeOptions = options.filter(opt => opt.optionType === 'size');
   const isCombo = name.includes('Combo') || name.includes('Promoção');
 
+  // Função para obter imagem baseada no nome do produto
+  const getProductImage = () => {
+    if (imageUrl) return `/placeholder-images/${imageUrl}`;
+    
+    const productName = name.toLowerCase();
+    
+    // Imagens específicas baseadas no tipo de pizza/produto
+    if (productName.includes('margherita') || productName.includes('margarita')) {
+      return 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=500&h=300&fit=crop';
+    } else if (productName.includes('calabresa') || productName.includes('pepperoni')) {
+      return 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=500&h=300&fit=crop';
+    } else if (productName.includes('portuguesa') || productName.includes('supreme')) {
+      return 'https://images.unsplash.com/photo-1571997478779-2adcbbe9ab2f?w=500&h=300&fit=crop';
+    } else if (productName.includes('frango') || productName.includes('chicken')) {
+      return 'https://images.unsplash.com/photo-1594007654729-407eedc4be65?w=500&h=300&fit=crop';
+    } else if (productName.includes('quatro queijos') || productName.includes('cheese')) {
+      return 'https://images.unsplash.com/photo-1548369937-47519962c11a?w=500&h=300&fit=crop';
+    } else if (productName.includes('bacon') || productName.includes('meat')) {
+      return 'https://images.unsplash.com/photo-1590534247854-3d44b90ec6d4?w=500&h=300&fit=crop';
+    } else if (productName.includes('vegetariana') || productName.includes('veggie')) {
+      return 'https://images.unsplash.com/photo-1552539618-7eec9b4d1796?w=500&h=300&fit=crop';
+    } else if (productName.includes('combo') || productName.includes('promoção')) {
+      return 'https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?w=500&h=300&fit=crop';
+    } else if (productName.includes('refrigerante') || productName.includes('coca') || productName.includes('drink')) {
+      return 'https://images.unsplash.com/photo-1581636625402-29b2a704ef13?w=500&h=300&fit=crop';
+    } else if (productName.includes('sobremesa') || productName.includes('doce') || productName.includes('brownie')) {
+      return 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=500&h=300&fit=crop';
+    }
+    
+    // Imagem padrão para pizzas
+    return 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=500&h=300&fit=crop';
+  };
+
   const calculatePrice = () => {
     let price = basePrice;
     
@@ -116,20 +149,14 @@ const MenuCard: React.FC<MenuItemProps> = ({
       {/* Image Section */}
       <div className="relative aspect-[4/3] overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent z-10" />
-        {imageUrl ? (
-          <img 
-            src={`/placeholder-images/${imageUrl}`} 
-            alt={name} 
-            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-            onError={(e) => {
-              e.currentTarget.src = 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=500&h=300&fit=crop';
-            }}
-          />
-        ) : (
-          <div className="w-full h-full bg-gradient-to-br from-orange-600 to-red-600 flex items-center justify-center">
-            <div className="text-white text-6xl opacity-20">🍕</div>
-          </div>
-        )}
+        <img 
+          src={getProductImage()} 
+          alt={name} 
+          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+          onError={(e) => {
+            e.currentTarget.src = 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=500&h=300&fit=crop';
+          }}
+        />
         
         {/* Price Badge */}
         <div className="absolute top-4 right-4 z-20">
