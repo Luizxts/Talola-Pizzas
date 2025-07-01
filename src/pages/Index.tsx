@@ -13,11 +13,11 @@ const Index = () => {
   const { isOpen, getFormattedHours } = useStoreStatus();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
-  // Carousel de imagens de pizzas
+  // Carousel de imagens de pizzas reais
   const pizzaImages = [
-    '/placeholder.svg?height=600&width=800&text=Pizza+Margherita',
-    '/placeholder.svg?height=600&width=800&text=Pizza+Calabresa',
-    '/placeholder.svg?height=600&width=800&text=Pizza+Portuguesa'
+    'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=800&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=800&h=600&fit=crop',
+    'https://images.unsplash.com/photo-1571997478779-2adcbbe9ab2f?w=800&h=600&fit=crop'
   ];
 
   useEffect(() => {
@@ -54,7 +54,7 @@ const Index = () => {
                 onClick={() => navigate('/funcionario-login')}
                 variant="outline"
                 size="sm"
-                className="border-white/30 text-white hover:bg-white/10 hidden sm:flex"
+                className="border-white/30 bg-white/10 text-white hover:bg-white/20 hover:text-white hidden sm:flex"
               >
                 <Settings className="h-4 w-4 mr-2" />
                 Funcionário
@@ -63,7 +63,7 @@ const Index = () => {
                 onClick={() => navigate('/funcionario-login')}
                 variant="outline"
                 size="sm"
-                className="border-white/30 text-white hover:bg-white/10 sm:hidden p-2"
+                className="border-white/30 bg-white/10 text-white hover:bg-white/20 hover:text-white sm:hidden p-2"
               >
                 <Settings className="h-4 w-4" />
               </Button>
@@ -119,7 +119,7 @@ const Index = () => {
                   variant="outline"
                   size="lg"
                   onClick={() => window.open('https://wa.me/5521975406476', '_blank')}
-                  className="border-white/30 text-white hover:bg-white/10 font-bold py-4 px-6 sm:px-8 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 text-base sm:text-lg"
+                  className="border-white/30 bg-white/10 text-white hover:bg-white/20 hover:text-white font-bold py-4 px-6 sm:px-8 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 text-base sm:text-lg"
                 >
                   <Phone className="h-5 w-5 sm:h-6 sm:w-6 mr-2" />
                   WhatsApp
