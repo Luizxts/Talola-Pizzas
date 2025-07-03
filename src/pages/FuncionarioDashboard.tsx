@@ -51,7 +51,7 @@ interface Stats {
 
 const FuncionarioDashboard = () => {
   const navigate = useNavigate();
-  const { storeStatus, toggleStoreStatus, isOpen } = useStoreStatus();
+  const { storeStatus, toggleStoreStatus, isOpen, loading: storeLoading } = useStoreStatus();
   const [orders, setOrders] = useState<Order[]>([]);
   const [stats, setStats] = useState<Stats>({
     pending: 0,
@@ -251,6 +251,11 @@ const FuncionarioDashboard = () => {
     navigate('/funcionario-login');
   };
 
+  const handleToggleStore = async () => {
+    console.log('Botão clicado - estado atual:', isOpen);
+    await toggleStoreStatus('Funcionário');
+  };
+
   const getStatusInfo = (status: string) => {
     switch (status) {
       case 'pending':
@@ -361,16 +366,21 @@ const FuncionarioDashboard = () => {
                   <span className="sm:hidden">{isOpen ? '🟢' : '🔴'}</span>
                 </div>
                 <Button
-                  onClick={() => toggleStoreStatus('Staff')}
+                  onClick={handleToggleStore}
+                  disabled={storeLoading}
                   size="sm"
                   className={`text-xs sm:text-sm font-bold ${
                     isOpen 
                       ? 'bg-red-600 hover:bg-red-700' 
                       : 'bg-green-600 hover:bg-green-700'
-                  } text-white`}
+                  } text-white disabled:opacity-50`}
                 >
-                  <span className="hidden sm:inline">{isOpen ? 'Fechar' : 'Abrir'}</span>
-                  <span className="sm:hidden">{isOpen ? 'Fechar' : 'Abrir'}</span>
+                  <span className="hidden sm:inline">
+                    {storeLoading ? 'Aguarde...' : (isOpen ? 'Fechar' : 'Abrir')}
+                  </span>
+                  <span className="sm:hidden">
+                    {storeLoading ? '...' : (isOpen ? 'Fechar' : 'Abrir')}
+                  </span>
                 </Button>
               </div>
               <Button

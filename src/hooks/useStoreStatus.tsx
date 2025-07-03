@@ -42,17 +42,35 @@ export const useStoreStatus = () => {
       if (data) {
         setStoreStatus(data as StoreStatus);
       } else {
-        // Se não existe configuração, assumir loja fechada por segurança
+        // Se não existe configuração, criar uma nova
         const defaultStatus = {
-          id: 'default',
           is_open: false,
           opening_time: '18:00',
           closing_time: '00:00',
           last_updated: new Date().toISOString(),
-          updated_by: 'Sistema',
-          created_at: new Date().toISOString()
+          updated_by: 'Sistema'
         };
-        setStoreStatus(defaultStatus);
+        
+        const { data: newData, error: insertError } = await supabase
+          .from('store_settings')
+          .insert(defaultStatus)
+          .select()
+          .single();
+
+        if (insertError) {
+          console.error('Erro ao criar configuração da loja:', insertError);
+          setStoreStatus({
+            id: 'default',
+            is_open: false,
+            opening_time: '18:00',
+            closing_time: '00:00',
+            last_updated: new Date().toISOString(),
+            updated_by: 'Sistema',
+            created_at: new Date().toISOString()
+          });
+        } else {
+          setStoreStatus(newData as StoreStatus);
+        }
       }
     } catch (error) {
       console.error('Erro ao buscar status da loja:', error);
@@ -86,9 +104,22 @@ export const useStoreStatus = () => {
   };
 
   const toggleStoreStatus = async (updatedBy: string = 'Staff') => {
-    if (!storeStatus || storeStatus.id === 'default') return;
+    console.log('Tentando alterar status da loja...', { storeStatus, updatedBy });
+    
+    if (!storeStatus) {
+      console.error('Store status não encontrado');
+      toast.error('Erro: Status da loja não encontrado');
+      return;
+    }
+
+    if (storeStatus.id === 'default') {
+      console.error('Não é possível alterar status padrão');
+      toast.error('Erro: Configuração da loja não encontrada');
+      return;
+    }
 
     const newStatus = !storeStatus.is_open;
+    console.log('Novo status:', newStatus);
     
     try {
       const { data, error } = await supabase
@@ -102,8 +133,12 @@ export const useStoreStatus = () => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao atualizar status:', error);
+        throw error;
+      }
 
+      console.log('Status atualizado com sucesso:', data);
       setStoreStatus(data as StoreStatus);
       
       const statusText = newStatus ? 'aberta' : 'fechada';
