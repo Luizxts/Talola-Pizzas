@@ -26,22 +26,14 @@ export const useStoreStatus = () => {
 
       if (error && error.code !== 'PGRST116') {
         console.error('Erro ao buscar status da loja:', error);
-        // Fallback para loja fechada se houver erro
-        setStoreStatus({
-          id: 'default',
-          is_open: false,
-          opening_time: '18:00',
-          closing_time: '00:00',
-          last_updated: new Date().toISOString(),
-          updated_by: 'Sistema',
-          created_at: new Date().toISOString()
-        });
         return;
       }
 
       if (data) {
+        console.log('Configuração encontrada:', data);
         setStoreStatus(data as StoreStatus);
       } else {
+        console.log('Nenhuma configuração encontrada, criando uma nova...');
         // Se não existe configuração, criar uma nova
         const defaultStatus = {
           is_open: false,
@@ -59,38 +51,22 @@ export const useStoreStatus = () => {
 
         if (insertError) {
           console.error('Erro ao criar configuração da loja:', insertError);
-          setStoreStatus({
-            id: 'default',
-            is_open: false,
-            opening_time: '18:00',
-            closing_time: '00:00',
-            last_updated: new Date().toISOString(),
-            updated_by: 'Sistema',
-            created_at: new Date().toISOString()
-          });
+          toast.error('Erro ao inicializar configuração da loja');
         } else {
+          console.log('Nova configuração criada:', newData);
           setStoreStatus(newData as StoreStatus);
         }
       }
     } catch (error) {
       console.error('Erro ao buscar status da loja:', error);
-      // Fallback para loja fechada em caso de erro
-      setStoreStatus({
-        id: 'default',
-        is_open: false,
-        opening_time: '18:00',
-        closing_time: '00:00',
-        last_updated: new Date().toISOString(),
-        updated_by: 'Sistema',
-        created_at: new Date().toISOString()
-      });
+      toast.error('Erro ao carregar status da loja');
     } finally {
       setLoading(false);
     }
   };
 
   const checkAutoClose = () => {
-    if (!storeStatus || !storeStatus.closing_time || storeStatus.id === 'default') return;
+    if (!storeStatus || !storeStatus.closing_time) return;
 
     const now = new Date();
     const currentTime = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
@@ -112,9 +88,9 @@ export const useStoreStatus = () => {
       return;
     }
 
-    if (storeStatus.id === 'default') {
-      console.error('Não é possível alterar status padrão');
-      toast.error('Erro: Configuração da loja não encontrada');
+    if (!storeStatus.id) {
+      console.error('Store status sem ID válido');
+      toast.error('Erro: Configuração da loja inválida');
       return;
     }
 
@@ -135,7 +111,8 @@ export const useStoreStatus = () => {
 
       if (error) {
         console.error('Erro ao atualizar status:', error);
-        throw error;
+        toast.error('Erro ao alterar status da loja: ' + error.message);
+        return;
       }
 
       console.log('Status atualizado com sucesso:', data);
