@@ -19,6 +19,7 @@ export const useStoreStatus = () => {
 
   const fetchStoreStatus = async () => {
     try {
+      console.log('Buscando configuração da loja...');
       const { data, error } = await supabase
         .from('store_settings')
         .select('*')
@@ -26,6 +27,7 @@ export const useStoreStatus = () => {
 
       if (error && error.code !== 'PGRST116') {
         console.error('Erro ao buscar status da loja:', error);
+        toast.error('Erro ao carregar status da loja');
         return;
       }
 
@@ -91,6 +93,16 @@ export const useStoreStatus = () => {
     if (!storeStatus.id) {
       console.error('Store status sem ID válido');
       toast.error('Erro: Configuração da loja inválida');
+      return;
+    }
+
+    // Verificar se o ID é um UUID válido
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(storeStatus.id)) {
+      console.error('ID inválido detectado:', storeStatus.id);
+      toast.error('Erro: ID da configuração inválido. Recarregando...');
+      // Recarregar a configuração
+      await fetchStoreStatus();
       return;
     }
 
