@@ -57,6 +57,7 @@ export const useStoreStatus = () => {
         } else {
           console.log('Nova configuração criada:', newData);
           setStoreStatus(newData as StoreStatus);
+          toast.success('Configuração da loja inicializada com sucesso!');
         }
       }
     } catch (error) {
@@ -93,16 +94,6 @@ export const useStoreStatus = () => {
     if (!storeStatus.id) {
       console.error('Store status sem ID válido');
       toast.error('Erro: Configuração da loja inválida');
-      return;
-    }
-
-    // Verificar se o ID é um UUID válido
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(storeStatus.id)) {
-      console.error('ID inválido detectado:', storeStatus.id);
-      toast.error('Erro: ID da configuração inválido. Recarregando...');
-      // Recarregar a configuração
-      await fetchStoreStatus();
       return;
     }
 
